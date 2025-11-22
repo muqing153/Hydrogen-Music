@@ -1,85 +1,54 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+import { onMounted, ref } from 'vue'
+import { useTheme } from 'vuetify'
+// 导入组件
+import RecommendView from './components/RecommendView.vue'
+import AudioView from './components/AudioView.vue'
+import TopView from './components/TopView.vue'
+import { player } from './player'
+import buttonPlayer from './bottomPlayer.vue'
+const theme = useTheme()
+const currentComponent = ref('RecommendView')
+// 把组件映射成一个对象，方便切换
+const componentsMap: Record<string, any> = {
+  RecommendView,
+  AudioView,
+  TopView
+}
+const A = ['RecommendView', 'AudioView', 'TopView']
+function changeComponent(name: string) {
+  currentComponent.value = name
+}
+
+player.addTrack('2150435618', true)
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <v-card>
+    <v-layout>
+      <v-navigation-drawer expand-on-hover permanent width="160">
+        <v-list>
+          <v-list-item prepend-avatar="/favicon.ico" subtitle="未登录" title="用户"></v-list-item>
+        </v-list>
+        <v-divider></v-divider>
+        <v-list ref="navRef" density="compact" nav>
+          <v-list-item prepend-icon="mdi-home-account" title="推荐" value="RecommendView"
+            :active="currentComponent === 'RecommendView'" @click="changeComponent('RecommendView')"></v-list-item>
+          <v-list-item prepend-icon="mdi-music-note" title="音频" value="AudioView"
+            :active="currentComponent === 'AudioView'" @click='changeComponent("AudioView")'></v-list-item>
+          <v-list-item prepend-icon="mdi-star" title="排行榜" value="TopView" :active="currentComponent === 'TopView'"
+            @click="changeComponent('TopView')"></v-list-item>
+        </v-list>
+      </v-navigation-drawer>
+      <v-main class="ma-5">
+        <component :is="componentsMap[currentComponent]"></component>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+        <div style="margin-bottom: 160px;">
+        </div>
+      </v-main>
+    </v-layout>
 
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
-    </div>
-  </header>
+  </v-card>
 
-  <RouterView />
+  <buttonPlayer />
 </template>
-
-<style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
-}
-</style>
