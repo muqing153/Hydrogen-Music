@@ -140,6 +140,18 @@ export class AudioPlayer {
   public currentTrack = computed(() => this.playlist.value[this.index.value] || null)
 }
 
-// 导出单例
 export const player = AudioPlayer.getInstance()
-window.player = player
+export const rightDrawer = ref(false)
+export function openRightDrawer() {
+  rightDrawer.value = true
+}
+
+export function closeRightDrawer() {
+  rightDrawer.value = false
+}
+
+export function toggleRightDrawer() {
+  rightDrawer.value = !rightDrawer.value
+}
+
+export const ButtonPlayerShow = ref(true)

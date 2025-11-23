@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@fontsource/roboto": "^5.2.8",
+    "@jamescoyle/vue-icon": "^0.1.2",
+    "@mdi/js": "^7.4.47",
     "axios": "^1.13.2",
     "buffer": "^6.0.3",
     "https": "^1.0.0",

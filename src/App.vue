@@ -5,21 +5,17 @@ import { useTheme } from 'vuetify'
 import RecommendView from './components/RecommendView.vue'
 import AudioView from './components/AudioView.vue'
 import TopView from './components/TopView.vue'
-import { player } from './player'
+import { player, rightDrawer } from './player'
 import buttonPlayer from './bottomPlayer.vue'
+import navigationdrawer from './navigation-drawer.vue'
+import { currentComponent, changeComponent } from './main'
 const theme = useTheme()
-const currentComponent = ref('RecommendView')
 // 把组件映射成一个对象，方便切换
 const componentsMap: Record<string, any> = {
   RecommendView,
   AudioView,
   TopView
 }
-const A = ['RecommendView', 'AudioView', 'TopView']
-function changeComponent(name: string) {
-  currentComponent.value = name
-}
-
 player.addTrack('2150435618', true)
 </script>
 
@@ -40,15 +36,14 @@ player.addTrack('2150435618', true)
             @click="changeComponent('TopView')"></v-list-item>
         </v-list>
       </v-navigation-drawer>
-      <v-main class="ma-5">
-        <component :is="componentsMap[currentComponent]"></component>
-
-        <div style="margin-bottom: 160px;">
-        </div>
+      <v-main>
+        <v-main class="pa-5" style="margin-bottom: 100px;">
+          <component :is="componentsMap[currentComponent]"></component>
+        </v-main>
+        <buttonPlayer />
       </v-main>
+      <navigationdrawer />
     </v-layout>
 
   </v-card>
-
-  <buttonPlayer />
 </template>

@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp, ref } from 'vue'
 import App from './App.vue'
 // Vuetify
 import 'unfonts.css'
@@ -18,5 +18,9 @@ const vuetify = createVuetify({
     defaultSet: 'mdi',
   },
 })
-createApp(App).use(vuetify).mount('#app')
 
+export const currentComponent = ref('RecommendView')
+export function changeComponent(name: string) {
+  currentComponent.value = name
+}
+createApp(App).use(vuetify).mount('#app')
