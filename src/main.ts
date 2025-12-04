@@ -1,12 +1,14 @@
 import { createApp, ref } from 'vue'
 import App from './App.vue'
 // Vuetify
-import 'unfonts.css'
 import '@mdi/font/css/materialdesignicons.css'
-import 'vuetify/styles'
+import 'unfonts.css'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
+import 'vuetify/styles'
+import { AudioPlayer } from './player'
+import router from './router'
 const vuetify = createVuetify({
   components,
   directives,
@@ -19,8 +21,6 @@ const vuetify = createVuetify({
   },
 })
 
-export const currentComponent = ref('RecommendView')
-export function changeComponent(name: string) {
-  currentComponent.value = name
-}
-createApp(App).use(vuetify).mount('#app')
+export const navigationrightShow = ref(false)
+
+createApp(App).use(vuetify).use(router).mount('#app')

@@ -1,7 +1,6 @@
 <template>
-    <v-navigation-drawer v-model="rightDrawer" location="right" temporary width="360">
+    <v-navigation-drawer v-model="navigationrightShow" location="right" temporary width="360" class="playlist-drawer">
         <v-card flat class="pa-2">
-
             <!-- 顶部标题 -->
             <v-card-title class="d-flex align-center">
                 <v-icon class="mr-2">mdi-playlist-music</v-icon>
@@ -28,7 +27,9 @@
     </v-navigation-drawer>
 </template>
 <script setup lang="ts">
-import { player, rightDrawer } from './player'
+import { navigationrightShow } from './main';
+import { player } from '@/staic';
+
 </script>
 
 <style scoped>
@@ -45,5 +46,10 @@ import { player, rightDrawer } from './player'
 
 .song-item.active {
     background-color: rgba(255, 255, 255, 0.15);
+}
+
+.playlist-drawer {
+    position: fixed !important;
+    z-index: 99999 !important;
 }
 </style>

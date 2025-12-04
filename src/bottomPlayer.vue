@@ -1,95 +1,65 @@
 <template>
-    <v-card class="footer pa-4 align-center" elevation="16" v-if="ButtonPlayerShow">
-        <!-- ⭐ 整行的拖动条 -->
-        <v-slider class="slider" :model-value="player.currentTime.value" :max="player.duration.value"
-            @start="sliderStart" @end="sliderEnd" hide-details track-size="4" thumb-size="0" />
+    <v-sheet class="align-center" elevation="16">
+        <v-col class="pa-0 ma-0">
+            <!-- ⭐ 整行的拖动条 -->
+            <v-slider :model-value="player.currentTime.value" :max="player.duration.value" @start="sliderStart"
+                @end="sliderEnd" hide-details track-size="3" thumb-size="0" class="pa-0 ma-0" />
 
-
-        <!-- ⭐ 下面是原来的 1 : 2 : 1 布局 -->
-        <v-row class="align-center">
-
-            <!-- 左 1 -->
-            <v-col cols="3">
-                <v-row class="align-center">
-                    <v-card width="56" height="56">
-                        <v-img :src="`${player.currentTrack?.value?.picUrl}`" width="56" height="56"
-                            @mouseenter="hover = true" @mouseleave="hover = false">
+            <v-row class="align-center ma-1">
+                <!-- 左侧 -->
+                <v-col cols="3" class="d-flex align-center">
+                    <v-sheet width="56" height="56">
+                        <v-img :width="56" :height="56" rounded="lg" :src="player.currentTrack?.value?.picUrl"
+                            @mouseenter="hover = true" @mouseleave="hover = false" cover>
                             <template #default>
                                 <div class="overlay cursor-pointer" :class="{ show: hover }" @click="startAudioView">
                                     <v-icon>mdi-fullscreen</v-icon>
                                 </div>
                             </template>
                         </v-img>
-                    </v-card>
-                    <v-col>
-                        <v-card-title class="pa-0">{{ player.currentTrack?.value?.name }}</v-card-title>
-                        <v-card-subtitle class="pa-0">{{ player.currentTrack?.value?.artist }}</v-card-subtitle>
-                    </v-col>
-                </v-row>
-            </v-col>
+                    </v-sheet>
+                    <div class="ml-2 overflow-hidden">
+                        <div class="text-truncate">{{ player.currentTrack?.value?.name }}</div>
+                        <div class="text-truncate">{{ player.currentTrack?.value?.artist }}</div>
+                    </div>
+                </v-col>
 
-            <!-- 中 2 -->
-            <v-col cols="6" class="text-center">
-                <v-btn icon @click='player.prev()' class="ma-1">
-                    <v-icon>mdi-skip-previous</v-icon>
-                </v-btn>
-                <v-btn icon @click='player.toggle()' class="ma-1">
-                    <v-icon>{{ player.isPlaying.value ? 'mdi-pause' : 'mdi-play' }}</v-icon>
-                </v-btn>
-                <v-btn icon @click='player.next()' class="ma-1">
-                    <v-icon>mdi-skip-next</v-icon>
-                </v-btn>
-            </v-col>
+                <!-- 中间 -->
+                <v-col cols="6" class="text-center">
+                    <v-btn icon @click='player.prev()'><v-icon>mdi-skip-previous</v-icon></v-btn>
+                    <v-btn icon @click='player.toggle()'><v-icon>{{ player.isPlaying.value ? 'mdi-pause' : 'mdi-play'
+                            }}</v-icon></v-btn>
+                    <v-btn icon @click='player.next()'><v-icon>mdi-skip-next</v-icon></v-btn>
+                </v-col>
 
-            <!-- 右 1 -->
-            <v-col cols="3" class="text-end">
-                <v-btn icon @click='toggleRightDrawer()'>
-                    <v-icon>mdi-playlist-music</v-icon>
-                </v-btn>
-            </v-col>
+                <!-- 右侧 -->
+                <v-col cols="3" class="text-end">
+                    <v-btn icon
+                        @click='navigationrightShow = !navigationrightShow'><v-icon>mdi-playlist-music</v-icon></v-btn>
+                </v-col>
+            </v-row>
 
-        </v-row>
-    </v-card>
+        </v-col>
+    </v-sheet>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { ButtonPlayerShow, player, toggleRightDrawer } from './player'
-import { fa } from 'vuetify/locale'
-import { changeComponent } from './main'
+import { AudioPlayer } from '@/player';
+import { getCurrentInstance, ref } from 'vue';
+import { navigationrightShow } from './main';
+
+import router from './router';
+import { AudioViewShow, sliderEnd, sliderStart } from './staic';
+const global = getCurrentInstance()!.appContext.config.globalProperties
+const player = global.$player as AudioPlayer;
 const hover = ref(false)
-function sliderStart(value: number) {
-    player.seek(value)
-    player.pause()
-}
-function sliderEnd(value: number) {
-    player.seek(value)
-    player.play()
-}
-
 function startAudioView() {
-    // ButtonPlayerShow.value = false
-    changeComponent('AudioView')
-    // 跳转到AudioView
-
-    // window.open('/audio', '_blank')
+    hover.value = false
+    AudioViewShow.value = true
+    router.push('/AudioView')
 }
 </script>
 <style scoped>
-.footer {
-    position: fixed;
-    left: 160px;
-    right: 0;
-    bottom: 0;
-    background: #1e1e1e;
-    padding: 10px 20px;
-    height: 90px;
-    /* 播放器高度 */
-    display: flex;
-    align-items: center;
-    box-sizing: border-box;
-}
-
 /* 遮罩层 */
 .overlay {
     position: absolute;
@@ -110,10 +80,22 @@ function startAudioView() {
     opacity: 1;
 }
 
-.slider {
+/* .slider {
     position: absolute;
     top: -13px;
     width: 100%;
     padding-right: 50px;
+} */
+/* .v-slider.v-input--horizontal>.v-input__control */
+:deep(.v-slider.v-input--horizontal>.v-input__control) {
+    min-height: 0;
+}
+
+:deep(.v-slider-track) {
+    border-radius: 0;
+}
+
+:deep(.v-slider__track-container) {
+    height: 0px;
 }
 </style>

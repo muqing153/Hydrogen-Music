@@ -1,56 +1,61 @@
 <template>
-    <v-card-title>推荐</v-card-title>
-    <v-divider></v-divider>
-    <!-- 横向滚动列表 -->
-    <v-slide-group show-arrows class="py-4">
-        <v-col v-for="(item, index) in items" :key="index" cols="auto">
-            <v-card class="overflow-hidden" width="130" height="150" link @click='getPlaylist(item.id)'>
-                <v-img :src="`${item.picUrl}`" height="150" cover>
-                    <template v-slot:placeholder>
-                        <div class="d-flex align-center justify-center fill-height">
-                            <v-progress-circular color="grey-lighten-4" indeterminate></v-progress-circular>
-                        </div>
+    <v-col>
+        <v-card-title>推荐</v-card-title>
+        <v-divider></v-divider>
+        <!-- 横向滚动列表 -->
+        <v-slide-group show-arrows class="py-4">
+            <v-col v-for="(item, index) in items" :key="index" cols="auto">
+                <v-card class="overflow-hidden" width="130" height="150" link @click='getPlaylist(item.id)'>
+                    <v-img :src="`${item.picUrl}`" height="150" cover>
+                        <template v-slot:placeholder>
+                            <div class="d-flex align-center justify-center fill-height">
+                                <v-progress-circular color="grey-lighten-4" indeterminate></v-progress-circular>
+                            </div>
+                        </template>
+                    </v-img>
+                    <template class="v-text-back ">
+                        {{ item.name }}
                     </template>
-                </v-img>
-                <template class="v-text-back ">
-                    {{ item.name }}
-                </template>
-            </v-card>
-        </v-col>
-    </v-slide-group>
-    <v-divider></v-divider>
-    <!-- 纵向滚动列表 -->
-    <v-list class="ma-5" @scroll="onScroll" ref="listRef">
-        <v-col v-for="value in songs">
-            <v-card style="margin-right: 50%;" variant="tonal" link @click="async () => {
-                await player.addTrack(String(value.id), true)
-            }" height="86">
-                <v-row class="pa-5 align-center" style="flex-wrap: nowrap; align-items: center;">
-                    <v-col class="pa-0 ma-0" cols="auto">
-                        <v-card class="pa-0 ma-0" width="56" height="56">
-                            <v-img :src="`${value.al.picUrl}?param=56y56`" cover>
-                                <template v-slot:placeholder>
-                                    <div class="d-flex align-center justify-center fill-height">
-                                        <v-progress-circular color="grey-lighten-4" indeterminate></v-progress-circular>
-                                    </div>
-                                </template>
-                            </v-img>
-                        </v-card>
-                    </v-col>
-                    <v-col class="pa-0 ma-0">
-                        <v-card-title class="pa-0" style="margin-left: 15px;">{{ value.al.name }}</v-card-title>
-                        <v-card-text> {{value.ar.map((a: any) => a.name).join('/')}}</v-card-text>
-                    </v-col>
-                </v-row>
-            </v-card>
-        </v-col>
-    </v-list>
+                </v-card>
+            </v-col>
+        </v-slide-group>
+        <v-divider></v-divider>
+        <!-- 纵向滚动列表 -->
+        <v-list class="ma-5" @scroll="onScroll" ref="listRef">
+            <v-col v-for="value in songs">
+                <v-card style="margin-right: 50%;" variant="tonal" link @click="async () => {
+                    await player.addTrack(String(value.id), true)
+                }" height="86">
+                    <v-row class="pa-5 align-center" style="flex-wrap: nowrap; align-items: center;">
+                        <v-col class="pa-0 ma-0" cols="auto">
+                            <v-card class="pa-0 ma-0" width="56" height="56">
+                                <v-img :src="`${value.al.picUrl}?param=56y56`" cover>
+                                    <template v-slot:placeholder>
+                                        <div class="d-flex align-center justify-center fill-height">
+                                            <v-progress-circular color="grey-lighten-4"
+                                                indeterminate></v-progress-circular>
+                                        </div>
+                                    </template>
+                                </v-img>
+                            </v-card>
+                        </v-col>
+                        <v-col class="pa-0 ma-0">
+                            <v-card-title class="pa-0" style="margin-left: 15px;">{{ value.al.name }}</v-card-title>
+                            <v-card-text> {{value.ar.map((a: any) => a.name).join('/')}}</v-card-text>
+                        </v-col>
+                    </v-row>
+                </v-card>
+            </v-col>
+        </v-list>
+    </v-col>
 </template>
 <script setup lang="ts">
-import { player } from '../player'
-import { onMounted, onUnmounted, ref } from 'vue'
+import type { AudioPlayer } from '@/player'
+import { getCurrentInstance, onMounted, onUnmounted, ref } from 'vue'
 import * as api from '../api'
-import { tr } from 'vuetify/locale'
+import { player } from '@/staic'
+
+
 
 const items: any = ref(null)
 const songs: any = ref(null)
@@ -78,7 +83,7 @@ function getPlaylist(id: string) {
         PlaylistOffset += 10
     })
 }
-getPlaylist(PlaylistUID)
+// getPlaylist(PlaylistUID)
 let lastScrollTop = 0;
 
 onMounted(() => {

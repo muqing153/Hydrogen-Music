@@ -82,11 +82,39 @@ export async function recommendResource(): Promise<any> {
 }
 
 export async function getPlaylist(uid: string, offset: number = 1): Promise<any> {
-  console.log(`${IP}/playlist/track/all?id=${uid}&limit=10&offset=${offset}&cookie=${cookie}`)
+  // console.log(`${IP}/playlist/track/all?id=${uid}&limit=10&offset=${offset}&cookie=${cookie}`)
   let data = (
     await axios({
       method: 'get',
       url: `${IP}/playlist/track/all?id=${uid}&limit=10&offset=${offset}&cookie=${cookie}`,
+    })
+  ).data
+  return Promise.resolve(data)
+}
+
+export async function getLyric(id: string): Promise<any> {
+  let data = (
+    await axios({
+      method: 'get',
+      url: `${IP}/lyric?id=${id}`,
+    })
+  ).data
+  return Promise.resolve(data)
+}
+
+// 喜欢音乐
+export async function likeMusic(id: string, like?: boolean): Promise<any> {
+  let likes
+  if (like === undefined) {
+    likes = ''
+  } else {
+    likes = like ? '&like=true' : '&like=false'
+  }
+  console.log(`${IP}/like?id=${id}${likes}&cookie=${cookie}`)
+  let data = (
+    await axios({
+      method: 'get',
+      url: `${IP}/like?id=${id}${likes}&cookie=${cookie}`,
     })
   ).data
   return Promise.resolve(data)

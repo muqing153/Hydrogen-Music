@@ -1,7 +1,6 @@
 import axios from 'axios'
-import { ref, computed } from 'vue'
-import { da } from 'vuetify/locale'
-import { cookie, IP } from './api'
+import { computed, ref } from 'vue'
+import { cookie, getLyric, IP, likeMusic } from './api'
 
 export interface Track {
   id: string
@@ -10,20 +9,22 @@ export interface Track {
   artist?: string
   alia?: string
   picUrl?: string
+  lyric?: any
 }
-
 export class AudioPlayer {
-  private static instance: AudioPlayer | null = null
   private audio: HTMLAudioElement
   public playlist = ref<Track[]>([])
   private index = ref(0)
 
-  public isPlaying = ref(false)
-  public currentTime = ref(0)
-  public duration = ref(0)
-  public volume = ref(1)
+  // 播放模式
+  public playMode = ref(0)
 
-  private constructor() {
+  public isPlaying = ref(false)
+  public currentTime = ref(0) // 当前播放时间
+  public duration = ref(0) // 音频时长
+  public volume = ref(1) // 音量
+
+  public constructor() {
     this.audio = new Audio()
     this.audio.preload = 'auto'
 
@@ -31,6 +32,7 @@ export class AudioPlayer {
     this.audio.addEventListener('play', () => (this.isPlaying.value = true))
     this.audio.addEventListener('pause', () => (this.isPlaying.value = false))
     this.audio.addEventListener('timeupdate', () => {
+      // console.log('timeupdate', this.audio.currentTime)
       this.currentTime.value = this.audio.currentTime
     })
     this.audio.addEventListener('loadedmetadata', () => {
@@ -41,12 +43,22 @@ export class AudioPlayer {
     })
   }
 
-  /** 获取单例实例 **/
-  public static getInstance(): AudioPlayer {
-    if (!AudioPlayer.instance) {
-      AudioPlayer.instance = new AudioPlayer()
+  public SetPlayMode(mode?: number) {
+    if (mode === undefined) {
+      mode = this.playMode.value + 1
+      if (mode > 3) mode = 0
     }
-    return AudioPlayer.instance
+    this.playMode.value = mode
+    switch (mode) {
+      case 0: // 顺序播放
+        break
+      case 1: // 单曲循环
+        break
+      case 2: // 随机播放
+        //打乱playlist
+        this.playlist.value = this.playlist.value.sort(() => Math.random() - 0.5)
+        break
+    }
   }
 
   /** 添加歌曲 **/
@@ -73,11 +85,11 @@ export class AudioPlayer {
     } else {
       track = data
     }
-
+    track.lyric = await getLyric(track.id)
     this.playlist.value.push(track)
     if (playNow) {
       // 等待3s
-      // await new Promise((resolve) => setTimeout(resolve, 3000))
+      await new Promise((resolve) => setTimeout(resolve, 3000))
       this.playIndex(track.id)
     }
   }
@@ -116,15 +128,25 @@ export class AudioPlayer {
     if (this.index.value > 0) this.playIndex(this.index.value - 1)
   }
   next() {
-    if (this.index.value + 1 >= this.playlist.value.length) {
-      this.index.value = 0
-    } else {
-      this.index.value += 1
+    switch (this.playMode.value) {
+      case 0: // 顺序播放
+      case 1:
+        if (this.index.value + 1 >= this.playlist.value.length) {
+          this.index.value = 0
+        } else {
+          this.index.value += 1
+        }
+        break
+      case 2: // 单曲循环
+        // this.index.value = this.index.value
+        break
     }
-    console.log(this.index.value)
     this.playIndex(this.index.value)
   }
-
+  like(id?: string) {
+    if (!id) return
+    likeMusic(id)
+  }
   /** 拖动进度条 **/
   seek(time: number) {
     this.audio.currentTime = time
@@ -139,19 +161,3 @@ export class AudioPlayer {
   /** 当前播放的 Track **/
   public currentTrack = computed(() => this.playlist.value[this.index.value] || null)
 }
-
-export const player = AudioPlayer.getInstance()
-export const rightDrawer = ref(false)
-export function openRightDrawer() {
-  rightDrawer.value = true
-}
-
-export function closeRightDrawer() {
-  rightDrawer.value = false
-}
-
-export function toggleRightDrawer() {
-  rightDrawer.value = !rightDrawer.value
-}
-
-export const ButtonPlayerShow = ref(true)
