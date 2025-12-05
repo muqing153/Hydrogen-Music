@@ -89,7 +89,7 @@ export class AudioPlayer {
     this.playlist.value.push(track)
     if (playNow) {
       // 等待3s
-      await new Promise((resolve) => setTimeout(resolve, 3000))
+      // await new Promise((resolve) => setTimeout(resolve, 3000))
       this.playIndex(track.id)
     }
   }

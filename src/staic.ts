@@ -3,6 +3,7 @@ import { AudioPlayer } from './player'
 
 export const AudioViewShow = ref(false)
 export const player = new AudioPlayer()
+export const PlaylistUID = ref('')
 export function sliderStart(value: number) {
   player.seek(value)
   player.pause()

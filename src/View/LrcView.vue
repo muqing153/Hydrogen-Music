@@ -1,50 +1,55 @@
 <template>
     <VList ref="lrcView" height="100%" width="100%" class="no-scrollbar" @mouseenter="onMouseEnter"
         @mouseleave="onMouseLeave" @scroll.passive="onScroll">
-        <VCol v-for="(item, index) in lrclsit" :key="index" :class="['lrc-line', { active: index === currentIndex }]">
-            <div>{{ item.text }}</div>
-        </VCol>
-        <VCol class="pa-3" v-if="lrclsit.length < 1">
-            <div class="text-center " style="font-size: 23px;">暂无歌词</div>
+        <VCol v-for="(item, index) in lrclsit" :key="index">
+            <div class="LrcCard" @click="play(item)">
+                <VCol :class="['lrc-line', { active: index === currentIndex }]">
+                    <div>{{ item.text }}</div>
+                    <div>{{ item.ttext }}</div>
+                </VCol>
+                <VIcon style="width: 24px; height: 24px;" class="hover-icon">
+                    mdi-play
+                </VIcon>
+
+            </div>
         </VCol>
     </VList>
 </template>
 <script setup lang="ts">
-import type { AudioPlayer } from '@/player';
-import { getCurrentInstance, onMounted, ref, watch } from 'vue';
-
-const global = getCurrentInstance()!.appContext.config.globalProperties
-const player = global.$player as AudioPlayer;
-const lrclsit: any = ref([])
+import { player } from '@/staic';
+import { onMounted, ref, watch } from 'vue';
+import { parseNeteaseLyric, type LyricLine } from './LrcTools';
+// player
+const lrclsit = ref<LyricLine[]>([])
 const reg = /\[(\d{2}):(\d{2})\.(\d{2,3})(?:-\d+)?\]/
 // defineExpose({ load, lrc })
 const currentIndex = ref(0)
 const lrcView: any = ref()
 const isHover = ref(false)
+let lastClick = 0;
+function play(item: LyricLine) {
+    const now = Date.now();
+    if (now - lastClick < 300) {
+        console.log("双击触发！");
+        // 🎵 在这里写你的播放逻辑
+        player.seek(item.time)
+    }
+    lastClick = now;
+}
+
 function lrc() {
-    console.log('UI')
-
     const value = player.currentTrack.value
-    if (!value) return
-    const lyric = value?.lyric.lrc.lyric
-    const lines = lyric.split('\n')
-    lrclsit.value = []
-
-    lines.forEach((line: string) => {
-        const match: any = line.match(reg)
-        if (!match) return
-
-        const text = line.replace(reg, '').trim()
-        if (!text) return
-        const min = Number(match[1])
-        const sec = Number(match[2])
-        const ms = Number(match[3]) / (match[3].length === 3 ? 1000 : 100)
-
-        lrclsit.value.push({
-            time: match[0],
-            seconds: min * 60 + sec + ms,
-            text,
-        })
+    if (!value) {
+        lrcNull()
+        return
+    }
+    console.log(JSON.stringify(value?.lyric))
+    lrclsit.value = parseNeteaseLyric(value.lyric.lrc.lyric, value?.lyric.tlyric.lyric)
+}
+function lrcNull() {
+    lrclsit.value.push({
+        time: 0,
+        text: 'text',
     })
 }
 lrc()
@@ -55,9 +60,9 @@ watch(() => player.currentTrack.value, () => {
 // 监听播放时间变化 → 找到对应的歌词行
 watch(player.currentTime, () => {
     for (let i = 0; i < lrclsit.value.length; i++) {
-        if (player.currentTime.value <= lrclsit.value[i].seconds) {
+        if (player.currentTime.value <= lrclsit.value[i]!.time) {
             currentIndex.value = Math.max(i - 1, 0)
-            // scrollToCurrent()
+            scrollToCurrent()
             break
         }
     }
@@ -127,7 +132,9 @@ function scrollToCurrent() {
 }
 
 .lrc-line {
-    font-size: 16px;
+    /* 不可复制 */
+    -webkit-user-select: none;
+    font-size: 36px;
     opacity: 0.5;
     transition: font-size 0.35s cubic-bezier(.4, 0, .2, 1),
         opacity 0.35s cubic-bezier(.4, 0, .2, 1),
@@ -135,8 +142,35 @@ function scrollToCurrent() {
 }
 
 .lrc-line.active {
-    font-size: 23px;
+    font-size: 56px;
     opacity: 1;
     transform: translateX(0);
+}
+
+.LrcCard {
+    /* 默认状态不应用任何特殊样式 */
+    padding: 1px;
+    display: flex;
+    /* 水平布局 */
+    justify-content: space-between;
+    /* 垂直居中 */
+    align-items: center;
+}
+
+.LrcCard:hover {
+    border-radius: 16px;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 默认隐藏图标 */
+.LrcCard .hover-icon {
+    opacity: 0;
+    margin-right: 3px;
+    transition: 0.2s;
+}
+
+/* 当 .LrcCard 被 hover 时显示图标 */
+.LrcCard:hover .hover-icon {
+    opacity: 1;
 }
 </style>

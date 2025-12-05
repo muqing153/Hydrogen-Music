@@ -119,3 +119,21 @@ export async function likeMusic(id: string, like?: boolean): Promise<any> {
   ).data
   return Promise.resolve(data)
 }
+
+// 获取排行榜歌单
+export async function getTopList(): Promise<any> {
+  //如果本地 localStorage 存在 getTopList 数据
+  let data = localStorage.getItem('getTopList')
+  if (data && data !== undefined && data !== null && data !== 'undefined') {
+    console.log('get getTopList from localStorage  ')
+    return Promise.resolve(JSON.parse(data))
+  }
+  data = (
+    await axios({
+      method: 'get',
+      url: IP + '/toplist',
+    })
+  ).data
+  localStorage.setItem('getTopList', JSON.stringify(data))
+  return Promise.resolve(data)
+}

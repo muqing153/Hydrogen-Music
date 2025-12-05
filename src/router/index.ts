@@ -1,4 +1,5 @@
 import AudioView from '@/components/AudioView.vue'
+import MusicPlaylist from '@/components/MusicPlaylist.vue'
 import RecommendView from '@/components/RecommendView.vue'
 import TopView from '@/components/TopView.vue'
 import { AudioViewShow } from '@/staic'
@@ -19,6 +20,11 @@ const routes = [
     path: '/TopView',
     name: 'TopView',
     component: TopView,
+  },
+  {
+    path: '/MusicPlaylist',
+    name: 'MusicPlaylist',
+    component: MusicPlaylist,
   },
 ]
 

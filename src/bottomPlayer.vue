@@ -28,7 +28,7 @@
                 <v-col cols="6" class="text-center">
                     <v-btn icon @click='player.prev()'><v-icon>mdi-skip-previous</v-icon></v-btn>
                     <v-btn icon @click='player.toggle()'><v-icon>{{ player.isPlaying.value ? 'mdi-pause' : 'mdi-play'
-                            }}</v-icon></v-btn>
+                    }}</v-icon></v-btn>
                     <v-btn icon @click='player.next()'><v-icon>mdi-skip-next</v-icon></v-btn>
                 </v-col>
 
@@ -49,9 +49,8 @@ import { getCurrentInstance, ref } from 'vue';
 import { navigationrightShow } from './main';
 
 import router from './router';
-import { AudioViewShow, sliderEnd, sliderStart } from './staic';
-const global = getCurrentInstance()!.appContext.config.globalProperties
-const player = global.$player as AudioPlayer;
+import { AudioViewShow, player, sliderEnd, sliderStart } from './staic';
+// player
 const hover = ref(false)
 function startAudioView() {
     hover.value = false

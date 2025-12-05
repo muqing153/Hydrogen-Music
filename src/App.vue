@@ -19,13 +19,19 @@ import { AudioViewShow, player } from './staic';
         <v-list ref="navRef" density="compact" nav>
           <v-list-item prepend-icon="mdi-home-account" title="推荐" value="RecommendView" to="/"></v-list-item>
           <v-list-item prepend-icon="mdi-music-note" title="音频" value="AudioView" to="/AudioView"></v-list-item>
+          <v-list-item prepend-icon="mdi-music" title="音乐表" value="MusicPlaylist" to="/MusicPlaylist"></v-list-item>
           <v-list-item prepend-icon="mdi-star" title="排行榜" value="TopView" to="/TopView"></v-list-item>
         </v-list>
       </v-navigation-drawer>
 
       <v-main class="main">
         <VSheet class="content">
-          <RouterView />
+          <router-view v-slot="{ Component }">
+            <keep-alive include="RecommendView">
+              <component :is="Component" />
+            </keep-alive>
+          </router-view>
+
         </VSheet>
         <buttomPlayer v-if="!AudioViewShow && player.playlist.value.length > 0" class="playerClass" />
       </v-main>
