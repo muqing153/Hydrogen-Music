@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { computed, ref } from 'vue'
-import { cookie, getLyric, IP, likeMusic } from './api'
+import { cookie, getLyric, getPlaylist, IP, likeMusic } from './api'
 
 export interface Track {
   id: string
@@ -23,7 +23,9 @@ export class AudioPlayer {
   public currentTime = ref(0) // 当前播放时间
   public duration = ref(0) // 音频时长
   public volume = ref(1) // 音量
-
+  private audioContext = new AudioContext()
+  private analyser = this.audioContext.createAnalyser()
+  private source: MediaElementAudioSourceNode | null = null
   public constructor() {
     this.audio = new Audio()
     this.audio.preload = 'auto'
@@ -41,6 +43,13 @@ export class AudioPlayer {
     this.audio.addEventListener('ended', () => {
       this.next()
     })
+
+    this.source = this.audioContext.createMediaElementSource(this.audio)
+
+    this.source.connect(this.analyser)
+    this.analyser.connect(this.audioContext.destination)
+    this.audio.crossOrigin = 'anonymous'
+    this.analyser.fftSize = 256
   }
 
   public SetPlayMode(mode?: number) {
@@ -80,7 +89,7 @@ export class AudioPlayer {
         url: urlRes.data.data[0].url,
         name: infoRes.data.songs[0].name,
         artist: infoRes.data.songs[0].ar.map((a: any) => a.name).join('/'),
-        picUrl: infoRes.data.songs[0].al.picUrl,
+        picUrl: infoRes.data.songs[0].al.picUrl + '?param=512y512',
       }
     } else {
       track = data
@@ -96,7 +105,6 @@ export class AudioPlayer {
 
   /** 跳到指定歌曲 **/
   playIndex(i: number | string) {
-    console.log(typeof i)
     if (typeof i === 'string') {
       i = this.playlist.value.findIndex((t) => t.id === i)
     }
@@ -108,13 +116,66 @@ export class AudioPlayer {
     if (track) {
       this.audio.src = track.url
       this.audio.load()
-      this.audio.play().catch((err) => console.log('播放失败:', err))
+      this.play()
     }
+  }
+  // 加载歌单
+  async loadPlaylist(ids: string) {
+    // 清空歌单列表
+    this.playlist.value = []
+    getPlaylist(ids).then((res) => {
+      res.songs.forEach((data: any) => {
+        this.playlist.value.push({
+          id: data.id,
+          name: data.name,
+          artist: data.ar.map((a: any) => a.name).join('/'),
+          picUrl: data.al.picUrl,
+          url: `${IP}/song/url/v1?id=${data.id}&level=exhigh&cookie=${cookie}`,
+        } as any)
+      })
+      this.playIndex(0)
+    })
   }
 
   /** 播放/暂停 **/
-  play() {
-    this.audio.play().catch((err) => console.log('播放失败:', err))
+  async play() {
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume()
+    }
+
+    this.audio.play().catch(async (err) => {
+      const id = this.currentTrack.value?.id
+      if (!id) return
+
+      // 请求真实音频 URL
+      const urlRes = await axios.get(`${IP}/song/url/v1?id=${id}&level=exhigh&cookie=${cookie}`)
+      // 请求歌曲信息
+      const infoRes = await axios.get(`${IP}/song/detail?ids=${id}&cookie=${cookie}`)
+      const newData = {
+        id: id,
+        url: urlRes.data.data[0].url,
+        name: infoRes.data.songs[0].name,
+        artist: infoRes.data.songs[0].ar.map((a: any) => a.name).join('/'),
+        picUrl: infoRes.data.songs[0].al.picUrl,
+        lyric: await getLyric(id),
+      }
+      // 找到 playlist 的索引
+      const idx = this.playlist.value.findIndex((t) => t.id === id)
+      console.log('找到 playlist 的索引:', idx)
+      if (idx !== -1) {
+        // 直接更新对象
+        this.index.value = idx
+        this.playlist.value[idx] = newData as any
+        console.log('更新 playlist:', this.playlist.value[idx])
+      } else {
+        console.log('未找到 playlist 的索引')
+        return
+      }
+      this.audio.src = newData.url
+      this.audio.load()
+      this.audio.play()
+      console.log('播放失败:', err)
+    })
   }
   pause() {
     this.audio.pause()
@@ -129,18 +190,19 @@ export class AudioPlayer {
   }
   next() {
     switch (this.playMode.value) {
-      case 0: // 顺序播放
-      case 1:
-        if (this.index.value + 1 >= this.playlist.value.length) {
-          this.index.value = 0
-        } else {
-          this.index.value += 1
-        }
+      case 0: // 顺序
+        this.index.value = (this.index.value + 1) % this.playlist.value.length
         break
-      case 2: // 单曲循环
-        // this.index.value = this.index.value
+
+      case 1: // 单曲循环
+        // 不变
+        break
+
+      case 2: // 随机
+        this.index.value = Math.floor(Math.random() * this.playlist.value.length)
         break
     }
+
     this.playIndex(this.index.value)
   }
   like(id?: string) {
@@ -157,7 +219,25 @@ export class AudioPlayer {
     this.volume.value = v
     this.audio.volume = v
   }
+  getFrequencyData() {
+    const bufferLength = this.analyser.frequencyBinCount
+    const dataArray = new Uint8Array(bufferLength)
 
+    this.analyser.getByteFrequencyData(dataArray)
+
+    return dataArray
+  }
+
+  getVolume() {
+    const data = this.getFrequencyData()
+    let sum = 0
+
+    for (let i = 0; i < data.length; i++) {
+      sum += data[i]!
+    }
+
+    return sum / data.length
+  }
   /** 当前播放的 Track **/
   public currentTrack = computed(() => this.playlist.value[this.index.value] || null)
 }

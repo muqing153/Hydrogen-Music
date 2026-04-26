@@ -81,6 +81,7 @@ export async function recommendResource(): Promise<any> {
   return Promise.resolve(data)
 }
 
+// 获取歌单
 export async function getPlaylist(uid: string, offset: number = 1): Promise<any> {
   // console.log(`${IP}/playlist/track/all?id=${uid}&limit=10&offset=${offset}&cookie=${cookie}`)
   let data = (
@@ -135,5 +136,23 @@ export async function getTopList(): Promise<any> {
     })
   ).data
   localStorage.setItem('getTopList', JSON.stringify(data))
+  return Promise.resolve(data)
+}
+
+// 获取每日推荐音乐
+export async function getRecommendMusic(): Promise<any> {
+  //如果本地 localStorage 存在 getRecommendMusic 数据
+  let data = localStorage.getItem('getRecommendMusic')
+  if (data && data !== undefined && data !== null && data !== 'undefined') {
+    console.log('get getRecommendMusic from localStorage  ')
+    return Promise.resolve(JSON.parse(data))
+  }
+  data = (
+    await axios({
+      method: 'get',
+      url: 'http://localhost:3000/recommend/songs',
+    })
+  ).data
+  localStorage.setItem('getRecommendMusic', JSON.stringify(data))
   return Promise.resolve(data)
 }

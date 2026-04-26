@@ -21,61 +21,89 @@ import { onMounted, ref, watch } from 'vue';
 import { parseNeteaseLyric, type LyricLine } from './LrcTools';
 // player
 const lrclsit = ref<LyricLine[]>([])
-const reg = /\[(\d{2}):(\d{2})\.(\d{2,3})(?:-\d+)?\]/
-// defineExpose({ load, lrc })
 const currentIndex = ref(0)
 const lrcView: any = ref()
 const isHover = ref(false)
 let lastClick = 0;
+let lastClickIS = true
 function play(item: LyricLine) {
     const now = Date.now();
-    if (now - lastClick < 300) {
-        console.log("双击触发！");
+    if (now - lastClick < 300 && lastClickIS) {
+        console.log("双击触发！" + item.time);
         // 🎵 在这里写你的播放逻辑
         player.seek(item.time)
+        lastClickIS = false
+        setTimeout(() => { lastClickIS = true }, 1000)
     }
     lastClick = now;
 }
 
 function lrc() {
     const value = player.currentTrack.value
-    if (!value) {
-        lrcNull()
+
+    const lrcText = value?.lyric?.lrc?.lyric
+    const tlyricText = value?.lyric?.tlyric?.lyric
+
+    if (!lrcText) {
+        lrclsit.value = []
         return
     }
-    console.log(JSON.stringify(value?.lyric))
-    lrclsit.value = parseNeteaseLyric(value.lyric.lrc.lyric, value?.lyric.tlyric.lyric)
+
+    lrclsit.value = parseNeteaseLyric(lrcText, tlyricText)
 }
 function lrcNull() {
-    lrclsit.value.push({
+    lrclsit.value = [{
         time: 0,
-        text: 'text',
-    })
+        text: '暂无歌词'
+    }]
 }
-lrc()
-watch(() => player.currentTrack.value, () => {
-    lrc()
-})
+watch(
+    () => player.currentTrack.value,
+    (track) => {
+        if (!track?.lyric) {
+            lrclsit.value = []
+            return
+        }
+
+        const lrcText = track.lyric?.lrc?.lyric
+        const tText = track.lyric?.tlyric?.lyric
+
+        if (!lrcText) {
+            lrclsit.value = []
+            return
+        }
+
+        lrclsit.value = parseNeteaseLyric(lrcText, tText)
+    },
+    { immediate: true }
+)
 // window.lrclist = lrclsit
 // 监听播放时间变化 → 找到对应的歌词行
 watch(player.currentTime, () => {
-    for (let i = 0; i < lrclsit.value.length; i++) {
-        if (player.currentTime.value <= lrclsit.value[i]!.time) {
+    const list = lrclsit.value
+    // 处理没有歌词的情况
+    if (!list.length) return
+
+    for (let i = 0; i < list.length; i++) {
+        if (player.currentTime.value < list[i]!.time) {
             currentIndex.value = Math.max(i - 1, 0)
             scrollToCurrent()
-            break
+            return
         }
     }
+
+    // ⭐ 播放时间超过最后一句 → 显示最后一句
+    currentIndex.value = list.length - 1
+    scrollToCurrent()
 })
+
 // 状态
 const isUserScrolling = ref(false)
 let scrollTimeout: ReturnType<typeof setTimeout> | null = null
 let lastUserInteraction = 0      // 毫秒时间戳
-const USER_INTERACTION_THRESHOLD = 1000 // ms，1s 内视为用户滚动
-let isAutoScrolling = false
+const USER_INTERACTION_THRESHOLD = 1900 // ms，1s 内视为用户滚动
 onMounted(() => {
     const el = lrcView.value?.$el ?? lrcView.value
-
     const markUser = () => { lastUserInteraction = Date.now() }
 
     // 推荐在 list 容器上监听（如果移动端要支持 touch）
@@ -110,12 +138,23 @@ function onMouseEnter() { isHover.value = true }
 function onMouseLeave() { isHover.value = false; isUserScrolling.value = false }
 // 自动滚动
 function scrollToCurrent() {
-    const list = lrcView.value?.$el
-    const activeLine = list?.querySelector('.active')
-    // console.log(isHover)
-    if (!isUserScrolling.value) {
-        activeLine?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
+    if (isUserScrolling.value) return
+
+    const el = lrcView.value?.$el
+    if (!el) return
+
+    const children = el.querySelectorAll('.LrcCard')
+    const target = children[currentIndex.value] as HTMLElement
+
+    if (!target) return
+
+    const containerHeight = el.clientHeight
+    const offsetTop = target.offsetTop
+
+    el.scrollTo({
+        top: offsetTop - containerHeight / 2,
+        behavior: 'smooth'
+    })
 }
 </script>
 <style scoped>
@@ -134,7 +173,7 @@ function scrollToCurrent() {
 .lrc-line {
     /* 不可复制 */
     -webkit-user-select: none;
-    font-size: 36px;
+    font-size: 26px;
     opacity: 0.5;
     transition: font-size 0.35s cubic-bezier(.4, 0, .2, 1),
         opacity 0.35s cubic-bezier(.4, 0, .2, 1),
@@ -144,12 +183,10 @@ function scrollToCurrent() {
 .lrc-line.active {
     font-size: 56px;
     opacity: 1;
-    transform: translateX(0);
 }
 
 .LrcCard {
     /* 默认状态不应用任何特殊样式 */
-    padding: 1px;
     display: flex;
     /* 水平布局 */
     justify-content: space-between;

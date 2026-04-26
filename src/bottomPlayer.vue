@@ -26,10 +26,11 @@
 
                 <!-- 中间 -->
                 <v-col cols="6" class="text-center">
-                    <v-btn icon @click='player.prev()'><v-icon>mdi-skip-previous</v-icon></v-btn>
-                    <v-btn icon @click='player.toggle()'><v-icon>{{ player.isPlaying.value ? 'mdi-pause' : 'mdi-play'
-                    }}</v-icon></v-btn>
-                    <v-btn icon @click='player.next()'><v-icon>mdi-skip-next</v-icon></v-btn>
+                    <v-btn icon @click='player.prev()' variant="text"><v-icon>mdi-skip-previous</v-icon></v-btn>
+                    <v-btn icon @click='player.toggle()' variant="text"><v-icon>{{ player.isPlaying.value ? 'mdi-pause'
+                        : 'mdi-play'
+                            }}</v-icon></v-btn>
+                    <v-btn icon @click='player.next()' variant="text"><v-icon>mdi-skip-next</v-icon></v-btn>
                 </v-col>
 
                 <!-- 右侧 -->

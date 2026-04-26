@@ -2,10 +2,33 @@
 import navigationdrawer from './navigation-drawer.vue';
 import { navigationrightShow } from './main';
 import buttomPlayer from './bottomPlayer.vue';
-import { getCurrentInstance } from 'vue';
+import { getCurrentInstance, ref } from 'vue';
 import type { AudioPlayer } from './player';
 import { AudioViewShow, player } from './staic';
-// player
+import { useTheme } from 'vuetify';
+
+const theme = useTheme()
+function isDark() {
+  return !theme.global.current.value.dark
+}
+//切换主题
+function toggleTheme() {
+  theme.toggle()
+  //切换完成后保存当前的主题
+  localStorage.setItem('theme', isDark() ? 'light' : 'dark')
+}
+// 初始化当前主题
+let thememode = localStorage.getItem('theme')
+if (thememode) {
+  theme.change(thememode)
+}
+
+const islogin = ref(false)
+
+function login() {
+  islogin.value = true
+}
+
 </script>
 
 <template>
@@ -13,7 +36,7 @@ import { AudioViewShow, player } from './staic';
     <v-layout>
       <v-navigation-drawer expand-on-hover permanent width="160" :model-value="!AudioViewShow">
         <v-list>
-          <v-list-item prepend-avatar="/favicon.ico" subtitle="未登录" title="用户"></v-list-item>
+          <v-list-item prepend-avatar="/favicon.ico" subtitle="未登录" title="用户" link v-on:click="login"></v-list-item>
         </v-list>
         <v-divider></v-divider>
         <v-list ref="navRef" density="compact" nav>
@@ -22,6 +45,14 @@ import { AudioViewShow, player } from './staic';
           <v-list-item prepend-icon="mdi-music" title="音乐表" value="MusicPlaylist" to="/MusicPlaylist"></v-list-item>
           <v-list-item prepend-icon="mdi-star" title="排行榜" value="TopView" to="/TopView"></v-list-item>
         </v-list>
+
+        <template v-slot:append>
+          <div class="pa-2">
+            <v-btn :icon="isDark() ? 'mdi-white-balance-sunny' : 'mdi-moon-waning-crescent'" @click="toggleTheme()"
+              variant="plain">
+            </v-btn>
+          </div>
+        </template>
       </v-navigation-drawer>
 
       <v-main class="main">
@@ -35,9 +66,15 @@ import { AudioViewShow, player } from './staic';
         </VSheet>
         <buttomPlayer v-if="!AudioViewShow && player.playlist.value.length > 0" class="playerClass" />
       </v-main>
-      <navigationdrawer />
+      <navigationdrawer location="right" />
     </v-layout>
   </v-card>
+  <v-overlay v-model="islogin" class="flex-col justify-center">
+    <p>请使用手机扫码登陆</p>
+    <VImg src="../public/favicon.ico">
+
+    </VImg>
+  </v-overlay>
 </template>
 
 <style scoped>

@@ -5,6 +5,7 @@ export const AudioViewShow = ref(false)
 export const player = new AudioPlayer()
 export const PlaylistUID = ref('')
 export function sliderStart(value: number) {
+  player.currentTime.value = value
   player.seek(value)
   player.pause()
 }

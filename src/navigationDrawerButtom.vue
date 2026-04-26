@@ -1,5 +1,5 @@
 <template>
-    <v-navigation-drawer v-model="navigationrightShow" :location="location" temporary :width="wid">
+    <v-navigation-drawer v-model="navigationrightShow" location="bottom" temporary :width="wid">
         <v-card flat class="pa-2">
             <!-- 顶部标题 -->
             <v-card-title class="d-flex align-center">
@@ -9,7 +9,7 @@
 
             <!-- 列表 -->
             <v-list>
-                <v-card v-for="(item, index) in player.playlist.value" :key="item.id" @click="player.playIndex(index)"
+                <v-card v-for="item in player.playlist.value" :key="item.id" @click="player.playIndex(item.id)"
                     class="ma-1 song-item">
                     <v-row class="ma-1 align-center justify-center">
                         <v-card width="36" height="36">
@@ -35,20 +35,10 @@
 import { computed, type PropType } from 'vue';
 import { navigationrightShow } from './main';
 import { player } from '@/staic';
-const props = defineProps({
-    location: {
-        type: String as PropType<'bottom' | 'end' | 'left' | 'right' | 'start' | 'top'>,
-        default: 'right'
-    }
-});
+// 获取高度
 const wid = computed(() => {
-    if (props.location === 'bottom') {
-        return window.innerHeight / 2;
-    } else {
-        return window.innerWidth / 2;
-    }
+    return window.innerWidth / 2;
 })
-
 </script>
 
 <style scoped>
