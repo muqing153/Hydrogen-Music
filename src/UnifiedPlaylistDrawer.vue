@@ -1,5 +1,6 @@
 <template>
-    <v-navigation-drawer v-model="navigationrightShow" :location="location" temporary :width="wid">
+    <v-navigation-drawer v-model="navigationrightShow" :location="computedLocation" temporary :width="drawerWidth"
+        class="responsive-playlist-drawer">
         <v-card flat class="pa-2 playlist-drawer">
             <!-- 顶部标题 -->
             <v-card-title class="d-flex align-center justify-space-between py-3">
@@ -60,20 +61,38 @@
 import { computed, type PropType } from 'vue';
 import { navigationrightShow } from './state';
 import { player } from '@/staic';
+
 const props = defineProps({
     location: {
         type: String as PropType<'bottom' | 'end' | 'left' | 'right' | 'start' | 'top'>,
         default: 'right'
     }
 });
-const wid = computed(() => {
-    if (props.location === 'bottom') {
-        return window.innerHeight / 2;
-    } else {
-        return window.innerWidth / 2;
-    }
-})
 
+// 根据屏幕尺寸和指定位置计算实际显示位置
+const computedLocation = computed(() => {
+    const isMobile = window.innerWidth <= 600;
+
+    // 在移动端，如果指定的是右侧或左侧，则改为底部显示以获得更好的体验
+    if (isMobile && (props.location === 'right' || props.location === 'left')) {
+        return 'bottom';
+    }
+
+    return props.location;
+});
+
+// 根据位置和屏幕尺寸计算抽屉宽度/高度
+const drawerWidth = computed(() => {
+    const isMobile = window.innerWidth <= 600;
+
+    if (computedLocation.value === 'bottom' || computedLocation.value === 'top') {
+        // 底部或顶部抽屉：在移动端占屏幕高度的70%，桌面端占50%
+        return isMobile ? window.innerHeight * 0.7 : window.innerHeight * 0.5;
+    } else {
+        // 左右侧抽屉：在移动端占屏幕宽度的85%，桌面端占40%
+        return isMobile ? window.innerWidth * 0.85 : window.innerWidth * 0.4;
+    }
+});
 </script>
 
 <style scoped>
@@ -142,6 +161,22 @@ const wid = computed(() => {
     :deep(.playlist-list) {
         /* 确保在移动端可以流畅滚动 */
         overscroll-behavior: contain;
+    }
+
+    /* 调整移动端字体大小 */
+    .text-subtitle-1 {
+        font-size: 1rem !important;
+    }
+
+    .text-body-2 {
+        font-size: 0.875rem !important;
+    }
+}
+
+/* 平板设备优化 */
+@media (min-width: 601px) and (max-width: 960px) {
+    :deep(.v-navigation-drawer) {
+        max-width: 80vw;
     }
 }
 </style>

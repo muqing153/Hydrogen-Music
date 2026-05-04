@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import navigationdrawer from './navigation-drawer.vue';
+import UnifiedPlaylistDrawer from './UnifiedPlaylistDrawer.vue';
 import buttomPlayer from './bottomPlayer.vue';
-import { ref } from 'vue';
+import AppPhone from './AppPhone.vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { AudioViewShow, player } from './staic';
 import { useTheme } from 'vuetify';
 
@@ -25,10 +26,32 @@ const islogin = ref(false)
 function login() {
   islogin.value = true
 }
+
+// 检测设备是否为移动端
+const windowWidth = ref(window.innerWidth);
+const isMobile = computed(() => {
+  return windowWidth.value <= 768;
+});
+
+// 监听窗口大小变化
+const handleResize = () => {
+  windowWidth.value = window.innerWidth;
+};
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
 </script>
 
 <template>
-  <v-card>
+  <!-- 根据设备类型显示不同界面 -->
+  <AppPhone v-if="isMobile" />
+
+  <v-card v-else>
     <v-layout>
       <v-navigation-drawer expand-on-hover permanent width="160" :model-value="!AudioViewShow">
         <v-list>
@@ -63,7 +86,7 @@ function login() {
         </VSheet>
         <buttomPlayer v-if="!AudioViewShow && player.playlist.value.length > 0" class="playerClass" />
       </v-main>
-      <navigationdrawer location="right" />
+      <UnifiedPlaylistDrawer location="right" />
     </v-layout>
   </v-card>
   <v-overlay v-model="islogin" class="flex-col justify-center">

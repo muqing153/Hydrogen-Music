@@ -1,61 +1,118 @@
 <template>
-    <v-col>
-        <v-card-title>推荐歌单</v-card-title>
-        <v-divider></v-divider>
-        <!-- 横向滚动列表 -->
-        <v-slide-group show-arrows class="py-4">
-            <v-col v-for="(item, index) in items" :key="index" cols="auto">
-                <v-card class="overflow-hidden position-relative" width="130" height="150" link
-                    @click="router.push({ path: '/MusicPlaylist', query: { id: item.id } })">
-                    <!-- 右下角播放图标 -->
-                    <v-img :src="`${item.picUrl}`" height="150" cover>
-                        <template #placeholder>
-                            <div class="d-flex align-center justify-center fill-height">
-                                <v-progress-circular color="grey-lighten-4" indeterminate />
+    <v-col class="recommend-page">
+        <!-- 页面标题 -->
+        <v-card-title class="text-h5 font-weight-bold" style="flex-shrink: 0;">
+            <v-icon start color="primary">mdi-music-box-multiple</v-icon>
+            每日推荐
+        </v-card-title>
+        <v-divider class="mb-4" style="flex-shrink: 0;"></v-divider>
+        <!-- 推荐歌单区域 -->
+        <v-card v-if="items && items.length > 0" class="playlist-section mb-6" elevation="1">
+            <v-card-title class="text-subtitle-1 py-3 d-flex align-center">
+                <v-icon start color="primary">mdi-star-circle</v-icon>
+                推荐歌单
+            </v-card-title>
+            <v-card-text>
+                <!-- 横向滚动列表 -->
+                <v-slide-group class="py-2" hide-arrows>
+                    <v-col v-for="(item, index) in items" :key="index" cols="auto">
+                        <v-card class="playlist-card" width="160" height="180" link
+                            @click="router.push({ path: '/MusicPlaylist', query: { id: item.id } })">
+                            <!-- 封面图片区域 -->
+                            <v-img :src="`${item.picUrl}?param=360y360`" height="180" cover>
+                                <template #placeholder>
+                                    <div class="d-flex align-center justify-center fill-height">
+                                        <v-progress-circular color="grey-lighten-4" indeterminate />
+                                    </div>
+                                </template>
+                                <!-- 播放量徽章 -->
+                                <div class="play-count-badge" v-if="item.playcount">
+                                    <v-icon size="x-small">mdi-play</v-icon>
+                                    {{ formatPlayCount(item.playcount) }}
+                                </div>
+                            </v-img>
+                            <!-- 内容区域 -->
+                            <div class="playlist-content">
+                                <!-- 标题 -->
+                                <div class="playlist-title">
+                                    {{ item.name }}
+                                </div>
+                                <!-- 播放按钮 -->
+                                <v-btn class="play-icon" size="32" variant="tonal"
+                                    :icon="player.PlaylistUID.value === String(item.id) ? (player.isPlaying.value ? 'mdi-pause' : 'mdi-play') : 'mdi-play'"
+                                    @click.stop="handlePlaylistClick(String(item.id))" text>
+                                </v-btn>
                             </div>
-                        </template>
-                    </v-img>
-                    <!-- 名称 -->
-                    <div class="play-text">
-                        {{ item.name }}
-                    </div>
-                    <v-btn class="play-icon" size="28"
-                        :icon="player.PlaylistUID.value === String(item.id) ? (player.isPlaying.value ? 'mdi-pause' : 'mdi-play') : 'mdi-play'"
-                        variant="plain" @click.stop="handlePlaylistClick(String(item.id))">
-                    </v-btn>
-                </v-card>
-            </v-col>
-        </v-slide-group>
-        <v-divider></v-divider>
-        <v-card-title>推荐歌曲</v-card-title>
-        <v-divider></v-divider>
-        <!-- 推荐歌曲 -->
-        <!-- 推荐歌曲（竖向列表） -->
-        <div class="song-list">
-            <v-card v-for="(item, index) in MusicList" :key="index" class="song-item">
-                <!-- 封面 -->
-                <v-img :src="item.al?.picUrl" class="cover" cover />
+                        </v-card>
+                    </v-col>
+                </v-slide-group>
+            </v-card-text>
+        </v-card>
 
-                <!-- 信息 -->
-                <div class="info">
-                    <div class="title">
-                        {{ item.name }}
-                    </div>
+        <!-- 推荐歌曲区域 -->
+        <v-card v-if="MusicList && MusicList.length > 0" class="songs-section" elevation="1">
+            <v-card-title class="text-subtitle-1 py-3 d-flex align-center justify-space-between">
+                <span>
+                    <v-icon start color="success">mdi-music-note</v-icon>
+                    推荐歌曲
+                </span>
+                <v-chip size="small" variant="tonal">
+                    {{ MusicList.length }} 首
+                </v-chip>
+            </v-card-title>
 
-                    <div class="artist">
-                        {{item.ar?.map((a: any) => a.name).join(' / ')}}
-                    </div>
-
-                    <div class="reason" v-if="item.recommendReason">
-                        {{ item.recommendReason }}
-                    </div>
-                </div>
-
-                <!-- 播放 -->
-                <v-btn class="play-btn" icon="mdi-play" variant="text" @click="async () => {
+            <!-- 推荐歌曲列表 -->
+            <v-list lines="two" class="pa-2" density="comfortable">
+                <v-list-item v-for="(item, index) in MusicList" :key="index" class="song-item" @click="async () => {
                     await player.addTrack(String(item.id), true)
-                }" />
-            </v-card>
+                }">
+                    <!-- 封面 -->
+                    <template v-slot:prepend>
+                        <v-avatar size="56" rounded="lg">
+                            <v-img :src="`${item.al?.picUrl}?param=56y56`" cover>
+                                <template v-slot:placeholder>
+                                    <div class="d-flex align-center justify-center fill-height">
+                                        <v-progress-circular color="grey-lighten-4" indeterminate></v-progress-circular>
+                                    </div>
+                                </template>
+                            </v-img>
+                        </v-avatar>
+                    </template>
+
+                    <v-list-item-title class="font-weight-medium text-body-1">
+                        {{ item.name }}
+                    </v-list-item-title>
+
+                    <v-list-item-subtitle class="mt-1">
+                        <span class="text-truncate">
+                            <v-icon size="x-small" class="mr-1">mdi-account-music</v-icon>
+                            {{item.ar?.map((a: any) => a.name).join(' / ')}}
+                        </span>
+                        <br v-if="item.al?.name" />
+                        <v-chip v-if="item.al?.name" size="x-small" class="mt-1" variant="tonal">
+                            <v-icon start size="x-small">mdi-album</v-icon>
+                            {{ item.al.name }}
+                        </v-chip>
+                    </v-list-item-subtitle>
+
+                    <!-- 播放按钮 -->
+                    <template v-slot:append>
+                        <v-btn icon="mdi-play-circle" size="large" variant="text" @click.stop="async () => {
+                            await player.addTrack(String(item.id), true)
+                        }" />
+                    </template>
+                </v-list-item>
+            </v-list>
+        </v-card>
+
+        <!-- 空状态 -->
+        <v-empty-state v-if="(!items || items.length === 0) && (!MusicList || MusicList.length === 0)"
+            icon="mdi-music-off" title="暂无推荐" text="请稍后再试或检查网络连接" class="empty-state">
+        </v-empty-state>
+
+        <!-- 加载状态 -->
+        <div v-if="(!items && !MusicList)" class="d-flex justify-center align-center pa-16">
+            <v-progress-circular indeterminate size="64" width="6"></v-progress-circular>
         </div>
     </v-col>
 </template>
@@ -64,19 +121,37 @@ import { ref } from 'vue'
 import * as api from '../api'
 import { player } from '@/staic'
 import router from '@/router';
+
 defineOptions({
     name: "RecommendView",
 });
+
 const items: any = ref(null)
+const MusicList: any = ref(null)
+
+// 加载推荐歌单
 api.recommendResource().then((res) => {
     items.value = res.recommend
+}).catch((error) => {
+    console.error('加载推荐歌单失败:', error)
 })
+
 // 加载每日推荐歌曲
-const MusicList: any = ref(null)
 api.getRecommendMusic().then((res) => {
-    // console.log(res)
     MusicList.value = res.data.dailySongs
+}).catch((error) => {
+    console.error('加载推荐歌曲失败:', error)
 })
+
+/** 格式化播放次数 */
+function formatPlayCount(count: number): string {
+    if (count >= 100000000) {
+        return (count / 100000000).toFixed(1) + '亿'
+    } else if (count >= 10000) {
+        return (count / 10000).toFixed(1) + '万'
+    }
+    return count.toString()
+}
 
 /** 处理歌单点击 */
 function handlePlaylistClick(id: string) {
@@ -88,120 +163,143 @@ function handlePlaylistClick(id: string) {
         player.loadPlaylist(id)
     }
 }
-
 </script>
 <style scoped>
-.play-icon {
-    position: absolute;
-    right: 1px;
-    bottom: 50px;
+.recommend-page {
+    padding: 16px;
 }
 
-.play-text {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    text-align: center;
-    width: 100%;
-    height: 50px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(16px);
-    overflow: hidden;
-    /* 🔥 防止溢出 */
-    border-radius: inherit;
-    /* 可选：继承 v-card 圆角 */
+/* 推荐歌单区域 */
+.playlist-section {
+    border-radius: 12px;
 }
 
-.v-text-back {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 36%;
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(16px);
+.playlist-card {
+    transition: all 0.3s ease;
+    border-radius: 12px;
     overflow: hidden;
-    /* 🔥 防止溢出 */
-    border-radius: inherit;
-    /* 可选：继承 v-card 圆角 */
+    cursor: pointer;
+    position: relative;
+}
+
+.playlist-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.playlist-card:active {
+    transform: scale(0.98);
+}
+
+
+.play-count-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
     display: flex;
-    align-items: start;
-    /* 设置文字的超出 */
-    padding: 6px 6px;
+    align-items: center;
+    gap: 4px;
+}
+
+.playlist-content {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    background: linear-gradient(to top,
+            rgba(var(--v-theme-surface), 0.95) 0%,
+            rgba(var(--v-theme-surface), 0.85) 60%,
+            rgba(var(--v-theme-surface), 0.6) 100%);
+}
+
+.playlist-title {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: rgba(var(--v-theme-on-surface), 0.95);
+    overflow: hidden;
+    text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    /* 控制显示行数 */
     -webkit-box-orient: vertical;
-    overflow: hidden;
+    letter-spacing: 0.2px;
+    margin-right: 8px;
+}
+
+.play-icon {
+    position: absolute;
+    right: 3px;
+    top: -16px;
 }
 
 
 
-.song-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 10px 0;
-    /* 移动端滚动优化 */
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
+/* 推荐歌曲区域 */
+.songs-section {
+    border-radius: 12px;
 }
 
 .song-item {
-    display: flex;
-    align-items: center;
-    height: 70px;
-    padding: 6px;
-    position: relative;
-    /* 优化移动端点击响应 */
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
     -webkit-tap-highlight-color: transparent;
     cursor: pointer;
-    transition: all 0.2s ease;
+}
+
+.song-item:hover {
+    background-color: rgba(var(--v-theme-primary), 0.08);
+    transform: translateX(4px);
 }
 
 .song-item:active {
-    background-color: rgba(var(--v-theme-primary), 0.08);
+    background-color: rgba(var(--v-theme-primary), 0.12);
 }
 
-.cover {
-    flex: 0 0 60px;
-    /* 🔥 防止被 flex 拉伸 */
-    width: 60px !important;
-    height: 60px !important;
-    border-radius: 8px;
-    border-radius: 8px;
+/* 空状态 */
+.empty-state {
+    margin-top: 48px;
 }
 
-.info {
-    flex: 1;
-    padding-left: 10px;
-    overflow: hidden;
-}
+/* 响应式调整 */
+@media (max-width: 600px) {
+    .recommend-page {
+        padding: 8px;
+    }
 
-.title {
-    font-size: 14px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+    .playlist-card {
+        width: 140px;
+        height: 200px;
+    }
 
-.artist {
-    font-size: 12px;
-    opacity: 0.7;
-    margin-top: 2px;
-}
+    .playlist-card .v-img {
+        height: 140px;
+    }
 
-.reason {
-    font-size: 11px;
-    color: #4caf50;
-    margin-top: 2px;
-}
+    .playlist-content {
+        height: 60px;
+        padding: 8px;
+    }
 
-.play-btn {
-    position: absolute;
-    right: 6px;
+    .playlist-title {
+        font-size: 12px;
+    }
+
+    .play-icon {
+        width: 28px !important;
+        height: 28px !important;
+    }
 }
 </style>
