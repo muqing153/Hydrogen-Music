@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import navigationdrawer from './navigation-drawer.vue';
-import { navigationrightShow } from './main';
 import buttomPlayer from './bottomPlayer.vue';
-import { getCurrentInstance } from 'vue';
-import type { AudioPlayer } from './player';
 import { AudioViewShow, player } from './staic';
-// player
 </script>
 
 <template>

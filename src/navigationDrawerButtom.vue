@@ -33,7 +33,7 @@
 
 <script setup lang="ts">
 import { computed, type PropType } from 'vue';
-import { navigationrightShow } from './main';
+import { navigationrightShow } from './state';
 import { player } from '@/staic';
 // 获取高度
 const wid = computed(() => {

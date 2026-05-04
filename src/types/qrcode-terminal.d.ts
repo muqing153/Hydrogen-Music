@@ -6,4 +6,3 @@ declare module 'qrcode-terminal' {
   function generate(input: string, options?: QRCodeOptions, callback?: (qr: string) => void): void
   export = { generate }
 }
-

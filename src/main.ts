@@ -1,15 +1,14 @@
-import { createApp, ref } from 'vue'
+import { createApp } from 'vue'
 import App from './App.vue'
 // Vuetify
 import '@mdi/font/css/materialdesignicons.css'
 import 'unfonts.css'
-import { createVuetify, useTheme } from 'vuetify'
+import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import 'vuetify/styles'
-import { AudioPlayer } from './player'
-import router from './router'
 import AppPhone from './AppPhone.vue'
+import router from './router'
 const vuetify = createVuetify({
   components,
   directives,
@@ -26,7 +25,13 @@ function isMobile() {
   const mobileAgents = ['Android', 'iPhone', 'SymbianOS', 'Windows Phone', 'iPad', 'iPod']
   return mobileAgents.some((agent) => userAgent.includes(agent))
 }
-export const navigationrightShow = ref(false)
+document.addEventListener(
+  'visibilitychange',
+  (e) => {
+    e.stopImmediatePropagation()
+  },
+  true,
+)
 if (isMobile()) {
   createApp(AppPhone).use(vuetify).use(router).mount('#app')
 } else {

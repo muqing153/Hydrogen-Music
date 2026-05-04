@@ -19,8 +19,9 @@
                     <div class="play-text">
                         {{ item.name }}
                     </div>
-                    <v-btn class="play-icon" size="28" icon="mdi-play" variant="plain"
-                        @click.stop="player.loadPlaylist(String(item.id))">
+                    <v-btn class="play-icon" size="28"
+                        :icon="player.PlaylistUID.value === String(item.id) ? (player.isPlaying.value ? 'mdi-pause' : 'mdi-play') : 'mdi-play'"
+                        variant="plain" @click.stop="handlePlaylistClick(String(item.id))">
                     </v-btn>
                 </v-card>
             </v-col>
@@ -77,6 +78,17 @@ api.getRecommendMusic().then((res) => {
     MusicList.value = res.data.dailySongs
 })
 
+/** 处理歌单点击 */
+function handlePlaylistClick(id: string) {
+    if (player.PlaylistUID.value === id) {
+        // 如果当前正在播放该歌单，则切换播放/暂停
+        player.toggle()
+    } else {
+        // 否则加载新歌单
+        player.loadPlaylist(id)
+    }
+}
+
 </script>
 <style scoped>
 .play-icon {
@@ -130,6 +142,11 @@ api.getRecommendMusic().then((res) => {
     flex-direction: column;
     gap: 10px;
     padding: 10px 0;
+    /* 移动端滚动优化 */
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
 }
 
 .song-item {
@@ -138,6 +155,14 @@ api.getRecommendMusic().then((res) => {
     height: 70px;
     padding: 6px;
     position: relative;
+    /* 优化移动端点击响应 */
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.song-item:active {
+    background-color: rgba(var(--v-theme-primary), 0.08);
 }
 
 .cover {

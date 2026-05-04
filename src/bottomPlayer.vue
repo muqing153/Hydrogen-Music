@@ -45,9 +45,8 @@
 </template>
 
 <script setup lang="ts">
-import { AudioPlayer } from '@/player';
-import { getCurrentInstance, ref } from 'vue';
-import { navigationrightShow } from './main';
+import { ref } from 'vue';
+import { navigationrightShow } from './state';
 
 import router from './router';
 import { AudioViewShow, player, sliderEnd, sliderStart } from './staic';

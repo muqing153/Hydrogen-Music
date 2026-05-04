@@ -11,6 +11,13 @@
             <v-btn icon="mdi-fullscreen-exit" variant="plain" @click="Close()" />
         </div>
 
+        <!-- 🎵 右上角播放列表按钮 -->
+        <div class="playlist-btn">
+            <v-btn icon @click='navigationrightShow = !navigationrightShow' variant="plain">
+                <v-icon>mdi-playlist-music</v-icon>
+            </v-btn>
+        </div>
+
         <!-- 主体 -->
         <v-row no-gutters class="main-row">
 
@@ -43,7 +50,10 @@
                     <!-- 控制按钮 -->
                     <div class="apple-controls">
                         <!-- 喜欢按钮 -->
-                        <v-btn icon="mdi-heart" variant="text" @click="player.like(player.currentTrack.value?.id)" />
+                        <v-btn
+                            :icon="player.isSongLiked(player.currentTrack.value?.id || '') ? 'mdi-heart' : 'mdi-heart-outline'"
+                            :color="player.isSongLiked(player.currentTrack.value?.id || '') ? 'red' : undefined"
+                            variant="text" @click="player.like(player.currentTrack.value?.id)" />
                         <v-btn icon="mdi-skip-previous" variant="text" @click="player.prev()" />
                         <v-btn :icon="player.isPlaying.value ? 'mdi-pause' : 'mdi-play'" variant="text" size="large"
                             @click="player.toggle()" />
@@ -61,8 +71,8 @@
             <!-- 🎧 音频可视化分割 -->
             <div class="wave-divider">
                 <div v-for="i in wave.length - 1" :key="i" class="wave-dot" :style="{
-                    width: 5 + wave[i] * 46 + 'px',
-                    opacity: 0.3 + wave[i]
+                    width: 5 + wave[i]! * 46 + 'px',
+                    opacity: 0.3 + wave[i]!
                 }" />
             </div>
             <!-- 🎤 右侧歌词 -->
@@ -79,6 +89,7 @@
 
 <script setup lang="ts">
 import { AudioViewShow, player } from '@/staic'
+import { navigationrightShow } from '@/state'
 import { ref, onMounted, watch } from 'vue'
 import router from '@/router'
 import LrcView from '@/View/LrcView.vue'
@@ -87,7 +98,6 @@ import SliderSoundView from '@/View/SliderSoundView.vue'
 import axios from 'axios'
 
 const imageSrc = ref<string>('')
-const currentBlur = ref(90)
 
 /* =========================
    图片加载（修复版）
@@ -119,11 +129,6 @@ const loadImage = async (url?: string) => {
    初始化播放器
 ========================= */
 onMounted(() => {
-
-    // if (player.playlist.value.length < 1) {
-    //     player.addTrack('2722253787', true)
-    // }
-
     animate()
     loadImage(player.currentTrack.value?.picUrl)
     watch(
@@ -210,6 +215,14 @@ function Close() {
     z-index: 20;
 }
 
+/* 🎵 右上角播放列表按钮 */
+.playlist-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 20;
+}
+
 /* 主体 */
 .main-row {
     height: 100%;
@@ -222,13 +235,12 @@ function Close() {
     height: 100%;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
 }
 
 .apple-wrapper {
     width: 85%;
     max-width: 360px;
-    margin-top: 50px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -321,7 +333,7 @@ function Close() {
 .bg {
     position: fixed;
     width: 120vw;
-    height: 160vh;
+    height: 100vw;
 
     top: -10vh;
     left: -10vw;

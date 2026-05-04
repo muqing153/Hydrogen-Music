@@ -29,7 +29,6 @@ let lastClickIS = true
 function play(item: LyricLine) {
     const now = Date.now();
     if (now - lastClick < 300 && lastClickIS) {
-        console.log("双击触发！" + item.time);
         // 🎵 在这里写你的播放逻辑
         player.seek(item.time)
         lastClickIS = false
@@ -78,30 +77,74 @@ watch(
     { immediate: true }
 )
 // window.lrclist = lrclsit
-// 监听播放时间变化 → 找到对应的歌词行
+
+// 🎵 优化的二分查找算法 - 快速定位当前歌词索引
+function findCurrentLyricIndex(currentTime: number, list: LyricLine[]): number {
+    let left = 0
+    let right = list.length - 1
+
+    // 边界检查
+    if (currentTime < list[0]!.time) return 0
+    if (currentTime >= list[right]!.time) return right
+
+    // 二分查找
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2)
+        const midTime = list[mid]!.time
+
+        if (midTime <= currentTime && (mid === list.length - 1 || list[mid + 1]!.time > currentTime)) {
+            return mid
+        } else if (midTime > currentTime) {
+            right = mid - 1
+        } else {
+            left = mid + 1
+        }
+    }
+
+    return left
+}
+
+// 🎵 防抖函数 - 避免频繁触发滚动
+function debounce<T extends (...args: any[]) => void>(func: T, wait: number): (...args: Parameters<T>) => void {
+    let timeout: ReturnType<typeof setTimeout> | null = null
+    return function (...args: Parameters<T>) {
+        if (timeout !== null) clearTimeout(timeout)
+        timeout = setTimeout(() => func(...args), wait)
+    }
+}
+
+// 🎵 缓存 DOM 元素引用，避免重复查询
+let cachedChildren: HTMLElement[] = []
+let lastListLength = 0
+
+// 监听播放时间变化 → 找到对应的歌词行（使用二分查找优化）
 watch(player.currentTime, () => {
     const list = lrclsit.value
     // 处理没有歌词的情况
     if (!list.length) return
 
-    for (let i = 0; i < list.length; i++) {
-        if (player.currentTime.value < list[i]!.time) {
-            currentIndex.value = Math.max(i - 1, 0)
-            scrollToCurrent()
-            return
-        }
-    }
+    // 🎵 使用二分查找替代线性遍历，时间复杂度从 O(n) 降到 O(log n)
+    const newIndex = findCurrentLyricIndex(player.currentTime.value, list)
 
-    // ⭐ 播放时间超过最后一句 → 显示最后一句
-    currentIndex.value = list.length - 1
-    scrollToCurrent()
+    // 🎵 只有当索引真正变化时才更新和滚动
+    if (newIndex !== currentIndex.value) {
+        currentIndex.value = newIndex
+        debouncedScrollToCurrent()
+    }
 })
+
+// 🎵 创建防抖版本的滚动函数（100ms 防抖）
+const debouncedScrollToCurrent = debounce(() => {
+    scrollToCurrent()
+}, 50)
 
 // 状态
 const isUserScrolling = ref(false)
 let scrollTimeout: ReturnType<typeof setTimeout> | null = null
 let lastUserInteraction = 0      // 毫秒时间戳
-const USER_INTERACTION_THRESHOLD = 1900 // ms，1s 内视为用户滚动
+const USER_INTERACTION_THRESHOLD = 1900 // ms，1.9s 内视为用户滚动
+let scrollAnimationId: number | null = null
+
 onMounted(() => {
     const el = lrcView.value?.$el ?? lrcView.value
     const markUser = () => { lastUserInteraction = Date.now() }
@@ -127,7 +170,6 @@ function onScroll() {
         return
     }
 
-    console.log('用户滚动')
     // 真正的用户滚动行为
     isUserScrolling.value = true
     if (scrollTimeout) clearTimeout(scrollTimeout)
@@ -136,7 +178,7 @@ function onScroll() {
 
 function onMouseEnter() { isHover.value = true }
 function onMouseLeave() { isHover.value = false; isUserScrolling.value = false }
-// 自动滚动
+// 🎵 优化的自动滚动函数 - 使用 requestAnimationFrame 实现更流畅的滚动
 function scrollToCurrent() {
     if (isUserScrolling.value) return
 
@@ -148,13 +190,46 @@ function scrollToCurrent() {
 
     if (!target) return
 
-    const containerHeight = el.clientHeight
+    // 🎵 让当前歌词保持在第二行位置（显示上一句和下一句）
     const offsetTop = target.offsetTop
+    const firstChild = children[0] as HTMLElement
+    const lineHeight = firstChild ? firstChild.offsetHeight : 80 // 获取单行高度
 
-    el.scrollTo({
-        top: offsetTop - containerHeight / 2,
-        behavior: 'smooth'
-    })
+    // 计算第二行的位置：第一行高度 + 间距
+    const secondLinePosition = lineHeight + 8 // 8px 是 margin 间距
+    const targetScrollTop = Math.max(0, offsetTop - secondLinePosition)
+
+    // 取消之前的动画帧
+    if (scrollAnimationId !== null) {
+        cancelAnimationFrame(scrollAnimationId)
+    }
+
+    // 使用自定义缓动动画实现更流畅的滚动
+    const startScrollTop = el.scrollTop
+    const distance = targetScrollTop - startScrollTop
+    const duration = 400 // 动画持续时间（毫秒）
+    const startTime = performance.now()
+
+    // 缓动函数 - cubic-bezier(0.4, 0, 0.2, 1) 的近似实现
+    function easeInOutCubic(t: number): number {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+    }
+
+    function animate(currentTime: number) {
+        const elapsed = currentTime - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const easedProgress = easeInOutCubic(progress)
+
+        el.scrollTop = startScrollTop + distance * easedProgress
+
+        if (progress < 1) {
+            scrollAnimationId = requestAnimationFrame(animate)
+        } else {
+            scrollAnimationId = null
+        }
+    }
+
+    scrollAnimationId = requestAnimationFrame(animate)
 }
 </script>
 <style scoped>
@@ -163,6 +238,7 @@ function scrollToCurrent() {
     scrollbar-width: none;
     background-color: transparent;
     /* Firefox */
+    position: relative;
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -174,15 +250,31 @@ function scrollToCurrent() {
     /* 不可复制 */
     -webkit-user-select: none;
     font-size: 26px;
-    opacity: 0.5;
-    transition: font-size 0.35s cubic-bezier(.4, 0, .2, 1),
-        opacity 0.35s cubic-bezier(.4, 0, .2, 1),
-        transform 0.35s cubic-bezier(.4, 0, .2, 1);
+    opacity: 0.4;
+    color: rgba(255, 255, 255, 0.6);
+    transition:
+        font-size 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+        opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        filter 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        text-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        letter-spacing 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: blur(1px);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    line-height: 1.6;
+    will-change: font-size, opacity, filter;
 }
 
 .lrc-line.active {
-    font-size: 56px;
+    font-size: 36px;
     opacity: 1;
+    color: #ffffff;
+    filter: blur(0px);
+    font-weight: 600;
+    text-shadow:
+        0 0 20px rgba(255, 255, 255, 0.5),
+        0 0 40px rgba(255, 255, 255, 0.3),
+        0 4px 8px rgba(0, 0, 0, 0.4);
+    letter-spacing: 0.5px;
 }
 
 .LrcCard {
@@ -192,22 +284,50 @@ function scrollToCurrent() {
     justify-content: space-between;
     /* 垂直居中 */
     align-items: center;
+    padding: 12px 16px;
+    margin: 8px 0;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    will-change: transform, background-color;
 }
 
 .LrcCard:hover {
     border-radius: 16px;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 /* 默认隐藏图标 */
 .LrcCard .hover-icon {
     opacity: 0;
     margin-right: 3px;
-    transition: 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: scale(0.8);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 /* 当 .LrcCard 被 hover 时显示图标 */
 .LrcCard:hover .hover-icon {
     opacity: 1;
+    transform: scale(1);
+}
+
+/* 🎵 翻译歌词样式优化 */
+.lrc-line div:first-child {
+    font-weight: 500;
+}
+
+.lrc-line div:last-child {
+    font-size: 0.75em;
+    opacity: 0.7;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+.lrc-line.active div:last-child {
+    opacity: 0.85;
+    font-style: normal;
 }
 </style>

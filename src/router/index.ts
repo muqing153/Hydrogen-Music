@@ -2,6 +2,7 @@ import AudioView from '@/components/AudioView.vue'
 import MusicPlaylist from '@/components/MusicPlaylist.vue'
 import RecommendView from '@/components/RecommendView.vue'
 import TopView from '@/components/TopView.vue'
+import SearchView from '@/components/SerchView.vue'
 import { AudioViewShow } from '@/staic'
 import { createRouter, createWebHistory } from 'vue-router'
 
@@ -25,6 +26,11 @@ const routes = [
     path: '/MusicPlaylist',
     name: 'MusicPlaylist',
     component: MusicPlaylist,
+  },
+  {
+    path: '/Search',
+    name: 'SearchView',
+    component: SearchView,
   },
 ]
 

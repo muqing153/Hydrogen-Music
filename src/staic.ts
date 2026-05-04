@@ -1,8 +1,9 @@
 import { ref } from 'vue'
-import { AudioPlayer } from './player'
+import { getPlayer } from './player'
 
 export const AudioViewShow = ref(false)
-export const player = new AudioPlayer()
+// 使用单例模式获取播放器实例（HMR 安全）
+export const player = getPlayer()
 export const PlaylistUID = ref('')
 export function sliderStart(value: number) {
   player.currentTime.value = value
@@ -13,3 +14,5 @@ export function sliderEnd(value: number) {
   player.seek(value)
   player.play()
 }
+
+// "NeteaseCloudMusicApi": "^4.28.0",

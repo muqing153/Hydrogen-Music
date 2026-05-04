@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import navigationdrawer from './navigation-drawer.vue';
-import { navigationrightShow } from './main';
 import buttomPlayer from './bottomPlayer.vue';
-import { getCurrentInstance, ref } from 'vue';
-import type { AudioPlayer } from './player';
+import { ref } from 'vue';
 import { AudioViewShow, player } from './staic';
 import { useTheme } from 'vuetify';
 
@@ -24,11 +22,9 @@ if (thememode) {
 }
 
 const islogin = ref(false)
-
 function login() {
   islogin.value = true
 }
-
 </script>
 
 <template>
@@ -41,6 +37,7 @@ function login() {
         <v-divider></v-divider>
         <v-list ref="navRef" density="compact" nav>
           <v-list-item prepend-icon="mdi-home-account" title="推荐" value="RecommendView" to="/"></v-list-item>
+          <v-list-item prepend-icon="mdi-magnify" title="搜索" value="SearchView" to="/Search"></v-list-item>
           <v-list-item prepend-icon="mdi-music-note" title="音频" value="AudioView" to="/AudioView"></v-list-item>
           <v-list-item prepend-icon="mdi-music" title="音乐表" value="MusicPlaylist" to="/MusicPlaylist"></v-list-item>
           <v-list-item prepend-icon="mdi-star" title="排行榜" value="TopView" to="/TopView"></v-list-item>
@@ -72,7 +69,6 @@ function login() {
   <v-overlay v-model="islogin" class="flex-col justify-center">
     <p>请使用手机扫码登陆</p>
     <VImg src="../public/favicon.ico">
-
     </VImg>
   </v-overlay>
 </template>
