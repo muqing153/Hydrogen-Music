@@ -2,55 +2,189 @@ import axios from 'axios'
 // 开发环境使用代理，生产环境使用完整 URL
 const isDev = import.meta.env.DEV
 export const IP = isDev ? '/api' : 'http://192.168.124.4:3000'
-export const cookie =
-  'MUSIC_A_T=1645851617430; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/api/clientlog;;MUSIC_A_T=1645851617430; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/neapi/clientlog;;MUSIC_SNS=; Max-Age=0; Expires=Fri, 21 Nov 2025 03:50:52 GMT; Path=/;NMTID=00ONauRVt6GCUJfN0c_uc85iUrOXrYAAAGapIlLlg; Max-Age=315360000; Expires=Mon, 19 Nov 2035 03:50:52 GMT; Path=/;;__csrf=1e4cdb9bd5322630dfc174dfab9b24c8; Max-Age=1296010; Expires=Sat, 06 Dec 2025 03:51:02 GMT; Path=/;;MUSIC_A_T=1645851617430; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/openapi/clientlog;;MUSIC_R_T=1645851802679; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/wapi/feedback;;MUSIC_A_T=1645851617430; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/eapi/feedback;;MUSIC_R_T=1645851802679; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/api/feedback;;MUSIC_A_T=1645851617430; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/api/feedback;;MUSIC_U=00B67412AF0445774972CDA410E47C8EC74E5910DD4B606C2B229F33B9835B4A70ABA897732CD22A6451F362D8BADB2510E7081C1C0FF8751852F84509DCEF581B490C414AF7C8F5FA908D257CF7130D30255F14353CD7A25A6AB0ED419588A34EACE6F625E21A5C35E6AAF3465294CFFAC2327F577BC6C214944C8A61BEE3E5F213BCD27C5C5AEB7D76C1DAAC9A106547352EB7B6DEF8E634900CEC4DDD823C68F6ACE40C146C47A1DEE1CC76026AD62E00845A7AA9AEA7D93FB7D26A7AEE9BFB85F1B0A2872C10FD2EA188F3B1530B4A140300CF2FB39123AE7DC1D1A49270467AA07F53A036A62BE2139A1D515ADF39838C776F2AAE36E87C0811D302EF9AE1DF2334A45955BF178F4F236FFF782AEE93D9BBBD2CBF2619485F01C7C20557308ACB557983E3D5029129387A4C3B9C4B0BB8AC7DBCD47CBE0CE700B9B5D56AE71FE44C7AD973319E5DB2A129D417C399D6148A7835D7298632BEF352646FB3A34A344219804C124BD219C782D3E2B60544CEA57C4C26003EBE41E9321DAB182C688BC100178F20AE4EDCDEA8C0F342D2; Max-Age=15552000; Expires=Wed, 20 May 2026 03:50:52 GMT; Path=/;;MUSIC_R_T=1645851802679; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/wapi/clientlog;;MUSIC_R_T=1645851802679; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/weapi/feedback;;MUSIC_R_T=1645851802679; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/api/clientlog;;MUSIC_R_T=1645851802679; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/eapi/feedback;;MUSIC_R_T=1645851802679; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/neapi/feedback;;MUSIC_R_U=00ED414EEC1356F805DDD4D267343C8D9A90DC402EAA063F2ADD9D6BAB439A91C95828A2FB61854FD232335716C32D87B4FD6B14EAC302B0D8172CFBA313CC57DD07A0DC3C8D3E1F2FB3218A39DF08AEB4; Max-Age=15552000; Expires=Wed, 20 May 2026 03:50:52 GMT; Path=/eapi/login/token/refresh;;MUSIC_A_T=1645851617430; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/weapi/feedback;;MUSIC_R_T=1645851802679; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/openapi/clientlog;;MUSIC_A_T=1645851617430; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/neapi/feedback;;MUSIC_A_T=1645851617430; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/eapi/clientlog;;MUSIC_A_T=1645851617430; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/wapi/clientlog;;MUSIC_A_T=1645851617430; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/weapi/clientlog;;MUSIC_R_U=00ED414EEC1356F805DDD4D267343C8D9A90DC402EAA063F2ADD9D6BAB439A91C95828A2FB61854FD232335716C32D87B4FD6B14EAC302B0D8172CFBA313CC57DD07A0DC3C8D3E1F2FB3218A39DF08AEB4; Max-Age=15552000; Expires=Wed, 20 May 2026 03:50:52 GMT; Path=/api/login/token/refresh;;MUSIC_R_T=1645851802679; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/eapi/clientlog;;MUSIC_R_T=1645851802679; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/neapi/clientlog;;MUSIC_A_T=1645851617430; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/wapi/feedback;;MUSIC_R_T=1645851802679; Max-Age=2147483647; Expires=Wed, 09 Dec 2093 07:04:59 GMT; Path=/weapi/clientlog;'
-async function 二维码登录() {
-  try {
-    let response = await axios({
-      method: 'get',
-      url: IP + '/login/qr/key',
-      headers: {
-        'User-Agent': 'Apifox/1.0.0 (https://apifox.com)',
-        Accept: '*/*',
-        Host: 'api.muqingcandy.cn',
-        Connection: 'keep-alive',
-      },
-    })
-    // console.log(response.data)
-    const key = response.data.data.unikey
-    console.log(key)
-    axios({
-      method: 'get',
-      url: IP + `/login/qr/create?key=${key}&qrimg=true&timestamp`,
-    }).then(async (res) => {
-      let base = res.data.data.qrimg
-      //   const decoded = Buffer.from(res.data.data.qrimg, 'base64').toString('utf-8')
-      console.log(base)
-      while (true) {
-        let e = await axios({
-          method: 'get',
-          url: `${IP}/login/qr/check?key=${key}`,
-        })
-        //获取e的url
-        console.log(e.request?.res?.responseUrl)
-        console.log(e.data)
-        // 等待1s
-        await delay(1000) // 等待 2 秒
-      }
-      // qrcode.generate(base, { small: true, level: 'L' })
-    })
-  } catch (error) {
-    console.error(error)
+
+// Cookie 管理
+let cookieValue = ''
+
+export function getCookie(): string {
+  return cookieValue
+}
+
+export function setCookie(cookie: string): void {
+  cookieValue = cookie
+  // 持久化到 localStorage
+  if (cookie) {
+    localStorage.setItem('music_cookie', cookie)
+  } else {
+    localStorage.removeItem('music_cookie')
   }
 }
 
-function delay(ms: number) {
+// 初始化时从 localStorage 恢复 cookie
+const savedCookie = localStorage.getItem('music_cookie')
+if (savedCookie) {
+  cookieValue = savedCookie
+}
+
+// 延迟函数
+function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export function getLogin() {
-  二维码登录()
+// 二维码登录接口类型定义
+interface QRCodeKeyResponse {
+  code: number
+  data: {
+    unikey: string
+  }
 }
+
+interface QRCodeCreateResponse {
+  code: number
+  data: {
+    qrimg: string
+    qrurl: string
+  }
+}
+
+interface QRCodeCheckResponse {
+  code: number
+  message?: string
+  cookie?: string
+}
+
+/**
+ * 二维码登录流程
+ * @returns Promise<{ success: boolean, data?: { key: string, qrBase64: string, qrUrl: string }, message?: string }>
+ */
+export async function qrcodeLogin(): Promise<{
+  success: boolean
+  data?: {
+    key: string
+    qrBase64: string
+    qrUrl: string
+  }
+  message?: string
+}> {
+  try {
+    // 步骤1: 获取二维码 key
+    console.log('[登录] 步骤1: 获取二维码 key...')
+    const keyResponse = await axios.get<QRCodeKeyResponse>(`${IP}/login/qr/key`, {
+      params: {
+        timestamp: Date.now(),
+      },
+    })
+
+    if (keyResponse.data.code !== 200) {
+      throw new Error('获取二维码 key 失败')
+    }
+
+    const key = keyResponse.data.data.unikey
+    console.log('[登录] 获取到 key:', key)
+
+    // 步骤2: 生成二维码
+    console.log('[登录] 步骤2: 生成二维码...')
+    const qrResponse = await axios.get<QRCodeCreateResponse>(`${IP}/login/qr/create`, {
+      params: {
+        key,
+        qrimg: true,
+        timestamp: Date.now(),
+      },
+    })
+
+    if (qrResponse.data.code !== 200) {
+      throw new Error('生成二维码失败')
+    }
+
+    const qrBase64 = qrResponse.data.data.qrimg
+    const qrUrl = qrResponse.data.data.qrurl
+    console.log('[登录] 二维码已生成')
+
+    // 返回二维码数据供前端显示
+    return {
+      success: true,
+      data: {
+        key,
+        qrBase64,
+        qrUrl,
+      },
+    }
+  } catch (error) {
+    console.error('[登录] 错误:', error)
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : '登录失败',
+    }
+  }
+}
+
+/**
+ * 检查二维码扫描状态
+ * @param key 二维码 key
+ * @returns Promise<{ status: 'waiting' | 'scanned' | 'authorized' | 'expired', cookie?: string }>
+ */
+export async function checkQRCodeStatus(key: string): Promise<{
+  status: 'waiting' | 'scanned' | 'authorized' | 'expired'
+  cookie?: string
+  message?: string
+}> {
+  try {
+    const response = await axios.get<QRCodeCheckResponse>(`${IP}/login/qr/check`, {
+      params: {
+        key,
+        timestamp: Date.now(),
+      },
+    })
+
+    const { code, cookie } = response.data
+
+    // 800: 二维码过期
+    // 801: 等待扫码
+    // 802: 待确认
+    // 803: 授权登录成功
+    switch (code) {
+      case 800:
+        return { status: 'expired', message: '二维码已过期' }
+      case 801:
+        return { status: 'waiting', message: '等待扫码' }
+      case 802:
+        return { status: 'scanned', message: '已扫码，请在手机上确认' }
+      case 803:
+        // 登录成功，保存 cookie
+        if (cookie) {
+          setCookie(cookie)
+          console.log('[登录] 登录成功，cookie 已保存')
+        }
+        return { status: 'authorized', cookie, message: '登录成功' }
+      default:
+        return { status: 'waiting', message: '未知状态' }
+    }
+  } catch (error) {
+    console.error('[登录] 检查状态失败:', error)
+    return {
+      status: 'waiting',
+      message: error instanceof Error ? error.message : '检查状态失败',
+    }
+  }
+}
+
+/**
+ * 退出登录
+ */
+export function logout(): void {
+  setCookie('')
+  console.log('[登录] 已退出登录')
+}
+
+/**
+ * 检查是否已登录
+ */
+export function isLoggedIn(): boolean {
+  return cookieValue !== '' && cookieValue.length > 0
+}
+
+// 导出旧的常量（兼容性）
+export const cookie = ''
 export async function recommendResource(): Promise<any> {
   //如果本地 localStorage 存在 recommendResource 数据
   let data = localStorage.getItem('recommendResource')
@@ -62,7 +196,7 @@ export async function recommendResource(): Promise<any> {
   data = (
     await axios({
       method: 'get',
-      url: IP + '/recommend/resource' + '?cookie=' + cookie,
+      url: IP + '/recommend/resource' + (cookieValue ? '?cookie=' + cookieValue : ''),
     })
   ).data
   localStorage.setItem('recommendResource', JSON.stringify(data))
@@ -74,7 +208,7 @@ export async function getPlaylist(uid: string, offset: number = 1): Promise<any>
   let data = (
     await axios({
       method: 'get',
-      url: `${IP}/playlist/track/all?id=${uid}&limit=10&offset=${offset}&cookie=${cookie}`,
+      url: `${IP}/playlist/track/all?id=${uid}&limit=10&offset=${offset}${cookieValue ? '&cookie=' + cookieValue : ''}`,
     })
   ).data
   return Promise.resolve(data)
@@ -85,7 +219,7 @@ export async function getPlaylistDetail(id: string): Promise<any> {
   try {
     const response = await axios({
       method: 'get',
-      url: `${IP}/playlist/detail?id=${id}&cookie=${cookie}`,
+      url: `${IP}/playlist/detail?id=${id}${cookieValue ? '&cookie=' + cookieValue : ''}`,
     })
     return response.data
   } catch (error) {
@@ -124,11 +258,11 @@ export async function likeMusic(id: string, like?: boolean): Promise<any> {
   } else {
     likes = like ? '&like=true' : '&like=false'
   }
-  console.log(`${IP}/like?id=${id}${likes}&cookie=${cookie}`)
+  console.log(`${IP}/like?id=${id}${likes}${cookieValue ? '&cookie=' + cookieValue : ''}`)
   let data = (
     await axios({
       method: 'get',
-      url: `${IP}/like?id=${id}${likes}&cookie=${cookie}`,
+      url: `${IP}/like?id=${id}${likes}${cookieValue ? '&cookie=' + cookieValue : ''}`,
     })
   ).data
   return Promise.resolve(data)
@@ -139,7 +273,7 @@ export async function getLikedSongs(): Promise<any> {
   try {
     const response = await axios({
       method: 'get',
-      url: `${IP}/likelist?uid=0&cookie=${cookie}`, // uid=0 表示当前登录用户
+      url: `${IP}/likelist?uid=0${cookieValue ? '&cookie=' + cookieValue : ''}`, // uid=0 表示当前登录用户
     })
     return response.data
   } catch (error) {
@@ -195,7 +329,7 @@ export async function getRecommendMusic(): Promise<any> {
   const newData = (
     await axios({
       method: 'get',
-      url: IP + '/recommend/songs?cookie=' + cookie,
+      url: IP + '/recommend/songs' + (cookieValue ? '?cookie=' + cookieValue : ''),
     })
   ).data
 

@@ -2,9 +2,11 @@
 import UnifiedPlaylistDrawer from './UnifiedPlaylistDrawer.vue';
 import buttomPlayer from './bottomPlayer.vue';
 import AppPhone from './AppPhone.vue';
+import LoginView from './components/LoginView.vue';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { AudioViewShow, player } from './staic';
 import { useTheme } from 'vuetify';
+import { isLoggedIn, logout } from './api';
 
 const theme = useTheme()
 function isDark() {
@@ -22,9 +24,16 @@ if (thememode) {
   theme.change(thememode)
 }
 
-const islogin = ref(false)
-function login() {
-  islogin.value = true
+// 登录状态管理
+const showLoginDialog = ref(false)
+const loginStatus = computed(() => isLoggedIn())
+
+function handleLogin() {
+  showLoginDialog.value = true
+}
+
+function handleLogout() {
+  logout()
 }
 
 // 检测设备是否为移动端
@@ -55,7 +64,8 @@ onUnmounted(() => {
     <v-layout>
       <v-navigation-drawer expand-on-hover permanent width="160" :model-value="!AudioViewShow">
         <v-list>
-          <v-list-item prepend-avatar="/favicon.ico" subtitle="未登录" title="用户" link v-on:click="login"></v-list-item>
+          <v-list-item prepend-avatar="/favicon.ico" :subtitle="loginStatus ? '已登录' : '未登录'" title="用户" link
+            @click="handleLogin"></v-list-item>
         </v-list>
         <v-divider></v-divider>
         <v-list ref="navRef" density="compact" nav>
@@ -68,6 +78,9 @@ onUnmounted(() => {
 
         <template v-slot:append>
           <div class="pa-2">
+            <v-btn v-if="loginStatus" icon="mdi-logout" variant="plain" color="error" @click="handleLogout"
+              title="退出登录">
+            </v-btn>
             <v-btn :icon="isDark() ? 'mdi-white-balance-sunny' : 'mdi-moon-waning-crescent'" @click="toggleTheme()"
               variant="plain">
             </v-btn>
@@ -89,11 +102,9 @@ onUnmounted(() => {
       <UnifiedPlaylistDrawer location="right" />
     </v-layout>
   </v-card>
-  <v-overlay v-model="islogin" class="flex-col justify-center">
-    <p>请使用手机扫码登陆</p>
-    <VImg src="../public/favicon.ico">
-    </VImg>
-  </v-overlay>
+
+  <!-- 登录对话框 -->
+  <LoginView v-model="showLoginDialog" />
 </template>
 
 <style scoped>
