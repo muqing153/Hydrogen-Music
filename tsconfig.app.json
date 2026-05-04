@@ -16,7 +16,7 @@
         "moduleResolution": "bundler",
         "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
         "lib": [
-            "ES2017",
+            "ES2018",
             "DOM"
         ],
         "paths": {

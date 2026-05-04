@@ -73,7 +73,7 @@ export class AudioPlayer {
     this.analyser.fftSize = 256
 
     // 初始化时加载用户喜欢的歌曲列表
-    // this.loadLikedSongs()
+    this.loadLikedSongs()
   }
 
   /** 加载用户喜欢的歌曲列表 **/

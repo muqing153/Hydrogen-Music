@@ -7,7 +7,7 @@ import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import 'vuetify/styles'
-import AppPhone from './AppPhone.vue'
+// import AppPhone from './AppPhone.vue'
 import router from './router'
 const vuetify = createVuetify({
   components,
@@ -20,11 +20,6 @@ const vuetify = createVuetify({
     defaultSet: 'mdi',
   },
 })
-function isMobile() {
-  const userAgent = navigator.userAgent
-  const mobileAgents = ['Android', 'iPhone', 'SymbianOS', 'Windows Phone', 'iPad', 'iPod']
-  return mobileAgents.some((agent) => userAgent.includes(agent))
-}
 document.addEventListener(
   'visibilitychange',
   (e) => {
@@ -32,8 +27,4 @@ document.addEventListener(
   },
   true,
 )
-if (isMobile()) {
-  createApp(AppPhone).use(vuetify).use(router).mount('#app')
-} else {
-  createApp(App).use(vuetify).use(router).mount('#app')
-}
+createApp(App).use(vuetify).use(router).mount('#app')

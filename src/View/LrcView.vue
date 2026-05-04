@@ -2,12 +2,12 @@
     <VList ref="lrcView" height="100%" width="100%" class="no-scrollbar" @mouseenter="onMouseEnter"
         @mouseleave="onMouseLeave" @scroll.passive="onScroll">
         <VCol v-for="(item, index) in lrclsit" :key="index">
-            <div class="LrcCard" @click="play(item)">
-                <VCol :class="['lrc-line', { active: index === currentIndex }]">
-                    <div>{{ item.text }}</div>
-                    <div>{{ item.ttext }}</div>
+            <div class="LrcCard" @click="play(item)" draggable="false">
+                <VCol :class="['lrc-line', { active: index === currentIndex }]" draggable="false">
+                    <div draggable="false">{{ item.text }}</div>
+                    <div draggable="false">{{ item.ttext }}</div>
                 </VCol>
-                <VIcon style="width: 24px; height: 24px;" class="hover-icon">
+                <VIcon style="width: 24px; height: 24px;" class="hover-icon" draggable="false">
                     mdi-play
                 </VIcon>
 
@@ -249,6 +249,10 @@ function scrollToCurrent() {
 .lrc-line {
     /* 不可复制 */
     -webkit-user-select: none;
+    user-select: none;
+    /* 禁止拖拽 */
+    -webkit-user-drag: none;
+    user-drag: none;
     font-size: 26px;
     opacity: 0.4;
     color: rgba(255, 255, 255, 0.6);
@@ -290,6 +294,9 @@ function scrollToCurrent() {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     will-change: transform, background-color;
+    /* 禁止拖拽 */
+    -webkit-user-drag: none;
+    user-drag: none;
 }
 
 .LrcCard:hover {
