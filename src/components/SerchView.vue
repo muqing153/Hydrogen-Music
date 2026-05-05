@@ -1,5 +1,5 @@
 <template>
-    <v-col>
+    <div class="search-page">
         <!-- 页面标题 -->
         <v-card-title class="text-h5 font-weight-bold" style="flex-shrink: 0;">
             <v-icon start>mdi-magnify</v-icon>
@@ -79,7 +79,7 @@
 
         <!-- 搜索结果 -->
         <v-card v-if="searchResults.length > 0" class="results-container" elevation="1">
-            <v-card-title class="d-flex align-center justify-space-between py-3">
+            <v-card-title class="d-flex align-center justify-space-between py-3" style="flex-shrink: 0;">
                 <span class="text-subtitle-1">
                     <v-icon start>mdi-music-note</v-icon>
                     搜索结果
@@ -88,16 +88,10 @@
                     {{ total }} 首
                 </v-chip>
             </v-card-title>
-            <v-divider></v-divider>
+            <v-divider style="flex-shrink: 0;"></v-divider>
 
-            <!-- 搜索关键词标签 -->
-            <v-card-text v-if="searchQuery" class="pb-0">
-                <v-chip size="small" variant="outlined" prepend-icon="mdi-magnify">
-                    {{ searchQuery }}
-                </v-chip>
-            </v-card-text>
 
-            <v-list lines="two" class="pa-2" ref="resultsListRef">
+            <v-infinite-scroll :items="searchResults" @load="loadMore">
                 <v-list-item v-for="(item, index) in searchResults" :key="index" class="result-item"
                     @click="playTrack(item)">
                     <template v-slot:prepend>
@@ -128,24 +122,38 @@
                             {{ item.al?.name || item.album?.name }}
                         </v-chip>
                     </v-list-item-subtitle>
-
                     <template v-slot:append>
-                        <v-btn icon="mdi-play-circle" size="large" variant="text"
-                            @click.stop="playTrack(item)" />
+                        <v-btn icon="mdi-play-circle" size="large" variant="text" @click.stop="playTrack(item)" />
                     </template>
                 </v-list-item>
-            </v-list>
+                <!-- 加载中提示 -->
+                <template v-slot:loading>
+                    <div class="text-center py-4">
+                        <v-progress-circular indeterminate color="pink" size="32"></v-progress-circular>
+                        <div class="mt-2 text-body-2 text-pink-accent-2">✨ 正在努力加载中...</div>
+                    </div>
+                </template>
 
-            <!-- 加载更多提示 -->
-            <div v-if="hasMore && !loading" class="text-center pa-4 text-caption text-medium-emphasis">
-                向下滚动加载更多...
-            </div>
-            <div v-if="loading" class="d-flex justify-center pa-4">
-                <v-progress-circular indeterminate size="32" width="3"></v-progress-circular>
-            </div>
-            <div v-if="!hasMore && searchResults.length > 0" class="text-center pa-4 text-caption text-medium-emphasis">
-                已加载全部结果
-            </div>
+                <!-- 没有更多数据提示 -->
+                <template v-slot:empty>
+                    <div class="text-center py-6">
+                        <v-icon size="48" color="grey-lighten-1">mdi-check-circle-outline</v-icon>
+                        <div class="mt-2 text-body-2 text-medium-emphasis">🎵 已经到底啦~</div>
+                    </div>
+                </template>
+                <!-- 加载错误提示 -->
+                <template v-slot:error>
+                    <div class="text-center py-6">
+                        <v-icon size="48" color="error">mdi-alert-circle-outline</v-icon>
+                        <div class="mt-2 text-body-2 text-error">😢 加载失败了...</div>
+                        <v-btn size="small" variant="text" color="primary" class="mt-2"
+                            @click="$event.target.closest('.v-infinite-scroll').__vueParentComponent.ctx.retry()">
+                            再试一次 💪
+                        </v-btn>
+                    </div>
+                </template>
+
+            </v-infinite-scroll>
         </v-card>
 
         <!-- 空状态 -->
@@ -158,19 +166,15 @@
             </template>
         </v-empty-state>
 
-        <!-- 初始状态提示 -->
-        <v-empty-state v-if="!searched" icon="mdi-magnify" title="搜索音乐" text="输入歌曲名、歌手或专辑开始搜索" class="empty-state">
-        </v-empty-state>
-
         <!-- 加载状态 -->
-        <div v-if="loading && searchResults.length === 0" class="d-flex justify-center align-center pa-16">
+        <div v-if="loading && searchResults.length === 0" class="loading-state">
             <v-progress-circular indeterminate size="64" width="6"></v-progress-circular>
         </div>
-    </v-col>
+    </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue'
+import { ref, onMounted } from 'vue'
 import * as api from '../api'
 import { player } from '@/staic'
 
@@ -241,25 +245,31 @@ async function handleSearch() {
     }
 }
 
-async function loadMore() {
-    if (!searchQuery.value.trim() || loading.value) return
+async function loadMore({ done }: { done: (status: 'ok' | 'error' | 'empty') => void }) {
+    if (!searchQuery.value.trim() || !hasMore.value || loading.value) {
+        done('empty');
+        return;
+    }
 
-    loading.value = true
-    offset.value += 30
+    loading.value = true;
 
     try {
-        const res = await api.searchCloud(searchQuery.value.trim(), 30, offset.value)
+        const res = await api.searchCloud(searchQuery.value.trim(), 30, offset.value);
 
         if (res.result && res.result.songs) {
-            searchResults.value.push(...res.result.songs)
-            hasMore.value = res.result.songCount > searchResults.value.length
+            searchResults.value.push(...res.result.songs);
+            offset.value += 30;
+            hasMore.value = res.result.songCount > searchResults.value.length;
+            done('ok');  // 加载成功
         } else {
-            hasMore.value = false
+            hasMore.value = false;
+            done('empty');  // 没有更多数据
         }
     } catch (error) {
-        console.error('加载更多失败:', error)
+        console.error('加载更多失败:', error);
+        done('error');  // 加载失败
     } finally {
-        loading.value = false
+        loading.value = false;
     }
 }
 
@@ -379,51 +389,12 @@ function clearHistory() {
     localStorage.removeItem('searchHistory')
 }
 
-// 滚动加载更多
-let scrollTimer: any = null
-
-function attachScrollListener() {
-    const el = document.querySelector('.content') as HTMLElement | null
-    if (!el) return
-    el.addEventListener('scroll', onScrollHandler, { passive: true })
-}
-
-function detachScrollListener() {
-    const el = document.querySelector('.content') as HTMLElement | null
-    if (!el) return
-    el.removeEventListener('scroll', onScrollHandler)
-}
-
 onMounted(() => {
-    attachScrollListener()
     // 加载热门搜索
     loadHotSearch()
     // 加载搜索历史
     loadSearchHistory()
 })
-
-onUnmounted(() => detachScrollListener())
-
-// keep-alive 下的切换
-onActivated(() => attachScrollListener())
-onDeactivated(() => detachScrollListener())
-
-function onScrollHandler(e: Event) {
-    const el = e.target as HTMLElement
-    const { scrollTop, clientHeight, scrollHeight } = el
-
-    // 防抖处理
-    if (scrollTimer) {
-        clearTimeout(scrollTimer)
-    }
-
-    scrollTimer = setTimeout(() => {
-        // 当滚动到底部时加载更多
-        if (scrollTop + clientHeight >= scrollHeight - 100 && hasMore.value && !loading.value) {
-            loadMore()
-        }
-    }, 150)
-}
 
 async function playTrack(item: any) {
     try {
@@ -435,6 +406,18 @@ async function playTrack(item: any) {
 </script>
 
 <style scoped>
+/* 防止页面出现滚动条 */
+.search-page {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* 防止浏览器滚动条 */
+    overflow-x: hidden;
+    /* 禁止横向滚动 */
+    padding: 16px;
+}
+
 .search-header {
     border-radius: 12px;
     padding: 8px;
@@ -471,10 +454,14 @@ async function playTrack(item: any) {
 
 .hot-search {
     border-radius: 12px;
+    flex-shrink: 0;
+    /* 防止被压缩 */
 }
 
 .history-search {
     border-radius: 12px;
+    flex-shrink: 0;
+    /* 防止被压缩 */
 }
 
 .hot-tags {
@@ -491,6 +478,8 @@ async function playTrack(item: any) {
     flex-direction: column;
     overflow: hidden;
     /* 防止内容溢出 */
+    min-height: 0;
+    /* 允许flex子项收缩 */
 }
 
 .result-item {
@@ -513,31 +502,44 @@ async function playTrack(item: any) {
 
 .empty-state {
     margin-top: 48px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
+/* 无限滚动提示样式 */
+.v-infinite-scroll__loading,
+.v-infinite-scroll__empty,
+.v-infinite-scroll__error {
+    animation: fadeInUp 0.3s ease-out;
+}
 
-/* 搜索结果列表不需要独立滚动 */
-:deep(.results-container .v-list) {
+/* v-infinite-scroll 自适应高度 */
+:deep(.v-infinite-scroll) {
     flex: 1;
+    min-height: 200px;
     overflow-y: auto;
     overflow-x: hidden;
-    /* 移动端平滑滚动 */
-    -webkit-overflow-scrolling: touch;
-    /* 防止触摸时页面整体滚动 */
-    touch-action: pan-y;
 }
 
-/* 响应式调整 */
-@media (max-width: 600px) {
-    .search-page {
-        padding: 8px;
-        height: calc(100vh - 56px);
-        /* 移动端导航栏可能更矮 */
+/* 加载状态居中 */
+.loading-state {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
     }
 
-    :deep(.results-container .v-list) {
-        /* 确保在移动端可以流畅滚动 */
-        overscroll-behavior: contain;
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 </style>

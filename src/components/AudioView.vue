@@ -58,7 +58,7 @@
                         <v-btn :icon="player.isPlaying.value ? 'mdi-pause' : 'mdi-play'" variant="text" size="large"
                             @click="player.toggle()" />
                         <v-btn icon="mdi-skip-next" variant="text" @click="player.next()" />
-                        <v-btn icon="mdi-repeat" variant="text" @click="player.SetPlayMode()" />
+                        <v-btn :icon="getPlayModeIcon()" variant="text" @click="player.SetPlayMode()" />
                     </div>
 
                     <!-- 音量 -->
@@ -131,10 +131,10 @@
                                     :color="player.isSongLiked(player.currentTrack.value?.id || '') ? 'red' : undefined"
                                     variant="text" @click="player.like(player.currentTrack.value?.id)" />
                                 <v-btn icon="mdi-skip-previous" variant="text" @click="player.prev()" />
-                                <v-btn :icon="player.isPlaying.value ? 'mdi-pause' : 'mdi-play'" variant="text" size="large"
-                                    @click="player.toggle()" />
+                                <v-btn :icon="player.isPlaying.value ? 'mdi-pause' : 'mdi-play'" variant="text"
+                                    size="large" @click="player.toggle()" />
                                 <v-btn icon="mdi-skip-next" variant="text" @click="player.next()" />
-                                <v-btn icon="mdi-repeat" variant="text" @click="player.SetPlayMode()" />
+                                <v-btn :icon="getPlayModeIcon()" variant="text" @click="player.SetPlayMode()" />
                             </div>
 
                             <!-- 音量 -->
@@ -161,12 +161,14 @@
 <script setup lang="ts">
 import { AudioViewShow, player } from '@/staic'
 import { navigationrightShow } from '@/state'
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue'
 import router from '@/router'
 import LrcView from '@/View/LrcView.vue'
 import SliderView from '@/View/SliderView.vue'
 import SliderSoundView from '@/View/SliderSoundView.vue'
 import axios from 'axios'
+import { PlayMode } from '@/player'
+import { getLyric } from '@/api'
 
 const imageSrc = ref<string>('')
 
@@ -237,13 +239,48 @@ const loadImage = async (url?: string) => {
 onMounted(() => {
     animate()
     loadImage(player.currentTrack.value?.picUrl)
+    // 动态获取当前歌曲的歌词
+    loadLyricForCurrentTrack()
+
     watch(
         () => player.currentTrack.value?.id,
         () => {
             loadImage(player.currentTrack.value?.picUrl)
+            // 歌曲切换时，动态获取新歌曲的歌词
+            loadLyricForCurrentTrack()
         }
     )
 })
+
+/* =========================
+   动态加载歌词
+========================= */
+async function loadLyricForCurrentTrack() {
+    const track = player.currentTrack.value
+    if (!track || !track.id) {
+        return
+    }
+
+    // 如果已经有歌词数据，不需要重新获取
+    if (track.lyric) {
+        console.log(`歌曲 ${track.id} 已有歌词数据，跳过获取`)
+        return
+    }
+
+    try {
+        console.log(`正在获取歌曲 ${track.id} 的歌词...`)
+        const lyricData = await getLyric(track.id)
+
+        // 更新播放列表中对应歌曲的歌词
+        const idx = player.playlist.value.findIndex(t => t.id === track!.id)
+        if (idx !== -1 && lyricData) {
+            player.playlist.value[idx]!.lyric = lyricData
+            console.log(`歌曲 ${track.id} 歌词获取成功`)
+        }
+    } catch (error) {
+        console.warn(`获取歌曲 ${track.id} 歌词失败:`, error)
+    }
+}
 const scale = ref(1)
 const rotate = ref(0)
 const wave = ref<number[]>(Array(30).fill(0))
@@ -297,6 +334,24 @@ function getMirrorWave(data: Uint8Array, size: number) {
 function Close() {
     AudioViewShow.value = false
     router.back()
+}
+
+/* =========================
+   获取播放模式图标
+========================= */
+function getPlayModeIcon(): string {
+    switch (player.playMode.value) {
+        case PlayMode.Sequential:
+            return 'mdi-repeat-off' // 顺序播放（不循环）
+        case PlayMode.Loop:
+            return 'mdi-repeat-once' // 单曲循环
+        case PlayMode.Shuffle:
+            return 'mdi-shuffle' // 随机播放
+        case PlayMode.ListLoop:
+            return 'mdi-repeat' // 列表循环
+        default:
+            return 'mdi-repeat-off'
+    }
 }
 </script>
 

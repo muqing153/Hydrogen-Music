@@ -130,17 +130,45 @@ const items: any = ref(null)
 const MusicList: any = ref(null)
 
 // 加载推荐歌单
-api.recommendResource().then((res) => {
-    items.value = res.recommend
-}).catch((error) => {
-    console.error('加载推荐歌单失败:', error)
-})
+async function loadRecommendPlaylists(forceRefresh: boolean = false) {
+    try {
+        console.log('[RecommendView] 开始加载推荐歌单, forceRefresh:', forceRefresh)
+        const res = await api.recommendResource(forceRefresh)
+        items.value = res.recommend
+        console.log('[RecommendView] 推荐歌单加载成功，数量:', res.recommend?.length)
+    } catch (error) {
+        console.error('[RecommendView] 加载推荐歌单失败:', error)
+    }
+}
 
 // 加载每日推荐歌曲
-api.getRecommendMusic().then((res) => {
-    MusicList.value = res.data.dailySongs
-}).catch((error) => {
-    console.error('加载推荐歌曲失败:', error)
+async function loadRecommendSongs(forceRefresh: boolean = false) {
+    try {
+        console.log('[RecommendView] 开始加载推荐歌曲, forceRefresh:', forceRefresh)
+        const res = await api.getRecommendMusic(forceRefresh)
+        MusicList.value = res.data.dailySongs
+        console.log('[RecommendView] 推荐歌曲加载成功，数量:', res.data.dailySongs?.length)
+    } catch (error) {
+        console.error('[RecommendView] 加载推荐歌曲失败:', error)
+    }
+}
+
+// 初始加载
+loadRecommendPlaylists()
+loadRecommendSongs()
+
+// 暴露刷新方法供父组件调用
+defineExpose({
+    refreshData: () => {
+        console.log('[RecommendView] 收到刷新请求，强制重新加载数据...')
+        // 清除缓存
+        localStorage.removeItem('recommendResource')
+        localStorage.removeItem('getRecommendMusic')
+        localStorage.removeItem('getRecommendMusic_time')
+        // 强制刷新
+        loadRecommendPlaylists(true)
+        loadRecommendSongs(true)
+    }
 })
 
 /** 格式化播放次数 */

@@ -17,7 +17,7 @@
             <!-- 列表 -->
             <v-list lines="two" class="pa-2 playlist-list">
                 <v-list-item v-for="(item, index) in player.playlist.value" :key="item.id"
-                    @click="player.playIndex(index)" class="song-item"
+                    @click="player.playIndex(index, true)" class="song-item"
                     :class="{ active: player.currentTrack?.value?.id === item.id }">
                     <template v-slot:prepend>
                         <v-avatar size="48" rounded="lg">
@@ -44,7 +44,7 @@
 
                     <template v-slot:append>
                         <v-btn icon="mdi-play-circle" size="small" variant="text"
-                            @click.stop="player.playIndex(index)" />
+                            @click.stop="player.playIndex(index, true)" />
                     </template>
                 </v-list-item>
             </v-list>

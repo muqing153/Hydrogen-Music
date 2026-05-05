@@ -6,6 +6,18 @@ export const IP = isDev ? '/api' : 'http://192.168.124.4:3000'
 // Cookie 管理
 let cookieValue = ''
 
+// 初始化时从 localStorage 恢复 cookie
+function initCookie() {
+  const savedCookie = localStorage.getItem('music_cookie')
+  if (savedCookie) {
+    cookieValue = savedCookie
+    console.log('[Cookie] 已从 localStorage 恢复 cookie')
+  }
+}
+
+// 立即执行初始化
+initCookie()
+
 export function getCookie(): string {
   return cookieValue
 }
@@ -15,15 +27,11 @@ export function setCookie(cookie: string): void {
   // 持久化到 localStorage
   if (cookie) {
     localStorage.setItem('music_cookie', cookie)
+    console.log('[Cookie] cookie 已保存，长度:', cookie.length)
   } else {
     localStorage.removeItem('music_cookie')
+    console.log('[Cookie] cookie 已清除')
   }
-}
-
-// 初始化时从 localStorage 恢复 cookie
-const savedCookie = localStorage.getItem('music_cookie')
-if (savedCookie) {
-  cookieValue = savedCookie
 }
 
 // 延迟函数
@@ -170,10 +178,43 @@ export async function checkQRCodeStatus(key: string): Promise<{
 
 /**
  * 退出登录
+ * @returns Promise<{ success: boolean, message?: string }>
  */
-export function logout(): void {
-  setCookie('')
-  console.log('[登录] 已退出登录')
+export async function logout(): Promise<{ success: boolean; message?: string }> {
+  try {
+    // 如果已登录，先调用后端退出接口
+    if (isLoggedIn()) {
+      console.log('[登录] 正在调用后端退出接口...')
+      const response = await axios.get(`${IP}/logout?cookie=${cookieValue}`)
+
+      if (response.data.code === 200) {
+        console.log('[登录] 后端退出成功')
+      } else {
+        console.warn('[登录] 后端退出返回异常:', response.data)
+      }
+    }
+
+    // 清除本地 cookie 和用户信息
+    setCookie('')
+    localStorage.removeItem('user_info')
+
+    console.log('[登录] 已退出登录')
+    return {
+      success: true,
+      message: '退出成功',
+    }
+  } catch (error) {
+    console.error('[登录] 退出登录失败:', error)
+
+    // 即使接口失败，也要清除本地数据
+    setCookie('')
+    localStorage.removeItem('user_info')
+
+    return {
+      success: false,
+      message: '退出失败，但已清除本地数据',
+    }
+  }
 }
 
 /**
@@ -183,32 +224,146 @@ export function isLoggedIn(): boolean {
   return cookieValue !== '' && cookieValue.length > 0
 }
 
-// 导出旧的常量（兼容性）
-export const cookie = ''
-export async function recommendResource(): Promise<any> {
-  //如果本地 localStorage 存在 recommendResource 数据
-  let data = localStorage.getItem('recommendResource')
-  if (data && data !== undefined && data !== null && data !== 'undefined') {
-    console.log('get recommendResource from localStorage  ')
-    return Promise.resolve(JSON.parse(data))
+/**
+ * 获取用户信息
+ * @returns Promise<{ success: boolean, data?: any, message?: string }>
+ */
+export async function getUserAccount(): Promise<{
+  success: boolean
+  data?: any
+  message?: string
+}> {
+  if (!isLoggedIn()) {
+    console.log('[API] getUserAccount: 未登录')
+    return {
+      success: false,
+      message: '未登录',
+    }
   }
-  console.log('get recommendResource from api  ')
-  data = (
+
+  try {
+    console.log('[API] getUserAccount: 获取用户信息, cookie 长度:', cookieValue.length)
+    const response = await axios.get(`${IP}/user/account?cookie=${cookieValue}`)
+    console.log('[API] getUserAccount: 完整响应:', response.data)
+
+    // 网易云 API 返回格式：{ code: 200, data: { ... } } 或直接 { code: 200, account: {...}, profile: {...} }
+    const responseData = response.data
+    const resultCode = responseData.code || responseData.data?.code
+
+    console.log('[API] getUserAccount: 响应码:', resultCode)
+
+    if (resultCode === 200) {
+      console.log('[API] getUserAccount: 用户信息获取成功')
+      return {
+        success: true,
+        data: responseData,
+      }
+    } else {
+      console.warn('[API] getUserAccount: 获取用户信息失败:', responseData)
+      return {
+        success: false,
+        message: responseData.message || responseData.data?.message || '获取用户信息失败',
+      }
+    }
+  } catch (error) {
+    console.error('[API] getUserAccount: 网络请求失败:', error)
+    // 网络错误时不要清除 cookie
+    return {
+      success: false,
+      message: '网络请求失败，请检查网络连接',
+    }
+  }
+}
+
+/**
+ * 获取登录状态
+ * @returns Promise<{ success: boolean, data?: any, message?: string }>
+ */
+export async function getLoginStatus(): Promise<{
+  success: boolean
+  data?: any
+  message?: string
+}> {
+  if (!isLoggedIn()) {
+    console.log('[API] getLoginStatus: 未登录')
+    return {
+      success: false,
+      message: '未登录',
+    }
+  }
+
+  try {
+    console.log('[API] getLoginStatus: 检查登录状态, cookie 长度:', cookieValue.length)
+    const response = await axios.get(`${IP}/login/status?cookie=${cookieValue}`)
+    console.log('[API] getLoginStatus: 完整响应:', response.data)
+
+    // 网易云 API 返回格式：{ code: 200, data: { ... } } 或直接 { code: 200, account: {...}, profile: {...} }
+    const responseData = response.data
+    const resultCode = responseData.code || responseData.data?.code
+
+    console.log('[API] getLoginStatus: 响应码:', resultCode)
+
+    if (resultCode === 200) {
+      console.log('[API] getLoginStatus: 登录状态正常')
+      return {
+        success: true,
+        data: responseData,
+      }
+    } else {
+      console.warn('[API] getLoginStatus: 登录状态异常:', responseData)
+      return {
+        success: false,
+        message: responseData.message || responseData.data?.message || '获取登录状态失败',
+      }
+    }
+  } catch (error) {
+    console.error('[API] getLoginStatus: 网络请求失败:', error)
+    // 网络错误时不要清除 cookie，可能是临时网络问题
+    return {
+      success: false,
+      message: '网络请求失败，请检查网络连接',
+    }
+  }
+}
+
+export async function recommendResource(forceRefresh: boolean = false): Promise<any> {
+  // 如果强制刷新或没有缓存，则从 API 获取
+  if (!forceRefresh) {
+    let data = localStorage.getItem('recommendResource')
+    if (data && data !== undefined && data !== null && data !== 'undefined') {
+      console.log('[API] 从 localStorage 获取推荐歌单')
+      return Promise.resolve(JSON.parse(data))
+    }
+  }
+
+  console.log('[API] 从 API 获取推荐歌单, cookie:', cookieValue ? '已设置' : '未设置')
+  const data = (
     await axios({
       method: 'get',
       url: IP + '/recommend/resource' + (cookieValue ? '?cookie=' + cookieValue : ''),
     })
   ).data
-  localStorage.setItem('recommendResource', JSON.stringify(data))
+
+  // 只有登录时才缓存，未登录时不缓存
+  if (cookieValue) {
+    localStorage.setItem('recommendResource', JSON.stringify(data))
+    console.log('[API] 推荐歌单已缓存（登录状态）')
+  } else {
+    console.log('[API] 未登录，不缓存推荐歌单')
+  }
+
   return Promise.resolve(data)
 }
 
 // 获取歌单
 export async function getPlaylist(uid: string, offset: number = 1): Promise<any> {
+  // 首次加载 30 首，后续每次加载 10 首
+  const limit = offset === 1 ? 30 : 10;
+  
   let data = (
     await axios({
       method: 'get',
-      url: `${IP}/playlist/track/all?id=${uid}&limit=10&offset=${offset}${cookieValue ? '&cookie=' + cookieValue : ''}`,
+      url: `${IP}/playlist/track/all?id=${uid}&limit=${limit}&offset=${offset}${cookieValue ? '&cookie=' + cookieValue : ''}`,
     })
   ).data
   return Promise.resolve(data)
@@ -270,10 +425,19 @@ export async function likeMusic(id: string, like?: boolean): Promise<any> {
 
 // 获取用户喜欢的歌曲列表
 export async function getLikedSongs(): Promise<any> {
+  if (!isLoggedIn()) {
+    console.warn('未登录，无法获取喜欢歌曲列表')
+    return { ids: [] }
+  }
+
   try {
     const response = await axios({
       method: 'get',
-      url: `${IP}/likelist?uid=0${cookieValue ? '&cookie=' + cookieValue : ''}`, // uid=0 表示当前登录用户
+      url: `${IP}/likelist`,
+      params: {
+        uid: 0, // uid=0 表示当前登录用户
+        cookie: cookieValue,
+      },
     })
     return response.data
   } catch (error) {
@@ -301,31 +465,38 @@ export async function getTopList(): Promise<any> {
 }
 
 // 获取每日推荐音乐
-export async function getRecommendMusic(): Promise<any> {
-  //如果本地 localStorage 存在 getRecommendMusic 数据
+export async function getRecommendMusic(forceRefresh: boolean = false): Promise<any> {
   const cacheKey = 'getRecommendMusic'
   const cacheTimeKey = 'getRecommendMusic_time'
+
+  // 如果强制刷新，清除缓存
+  if (forceRefresh) {
+    console.log('[API] 强制刷新推荐歌曲，清除缓存')
+    localStorage.removeItem(cacheKey)
+    localStorage.removeItem(cacheTimeKey)
+  }
 
   const data = localStorage.getItem(cacheKey)
   const cacheTime = localStorage.getItem(cacheTimeKey)
 
   // 检查缓存是否存在且未过期（1小时 = 3600000毫秒）
-  if (data && cacheTime) {
+  if (!forceRefresh && data && cacheTime) {
     const now = Date.now()
     const cacheAge = now - parseInt(cacheTime, 10)
     const oneHour = 60 * 60 * 1000 // 1小时的毫秒数
 
     if (cacheAge < oneHour) {
-      console.log('get getRecommendMusic from localStorage')
+      console.log('[API] 从 localStorage 获取推荐歌曲')
       return Promise.resolve(JSON.parse(data))
     } else {
-      console.log('getRecommendMusic cache expired')
+      console.log('[API] 推荐歌曲缓存已过期')
       // 清除过期缓存
       localStorage.removeItem(cacheKey)
       localStorage.removeItem(cacheTimeKey)
     }
   }
 
+  console.log('[API] 从 API 获取推荐歌曲, cookie:', cookieValue ? '已设置' : '未设置')
   const newData = (
     await axios({
       method: 'get',
@@ -333,9 +504,14 @@ export async function getRecommendMusic(): Promise<any> {
     })
   ).data
 
-  // 保存数据和当前时间戳
-  localStorage.setItem(cacheKey, JSON.stringify(newData))
-  localStorage.setItem(cacheTimeKey, Date.now().toString())
+  // 只有登录时才缓存
+  if (cookieValue) {
+    localStorage.setItem(cacheKey, JSON.stringify(newData))
+    localStorage.setItem(cacheTimeKey, Date.now().toString())
+    console.log('[API] 推荐歌曲已缓存（登录状态）')
+  } else {
+    console.log('[API] 未登录，不缓存推荐歌曲')
+  }
 
   return Promise.resolve(newData)
 }

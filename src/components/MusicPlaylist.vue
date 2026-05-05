@@ -70,56 +70,76 @@
 
         <!-- 播放列表内容 -->
         <v-card v-if="songs.length > 0" class="playlist-content" elevation="1" flat>
-            <v-list lines="two" class="pa-2" density="comfortable">
-                <v-list-item v-for="(value, index) in songs" :key="value.id" class="song-item" @click="async () => {
-                    await player.addTrack(String(value.id), true)
-                }">
-                    <template v-slot:prepend>
-                        <v-avatar size="56" rounded="lg">
-                            <v-img :src="`${value.al.picUrl}?param=56y56`" cover>
-                                <template v-slot:placeholder>
-                                    <div class="d-flex align-center justify-center fill-height">
-                                        <v-progress-circular color="grey-lighten-4" indeterminate></v-progress-circular>
-                                    </div>
-                                </template>
-                            </v-img>
-                        </v-avatar>
-                    </template>
+            <v-infinite-scroll :items="songs" @load="loadMore">
+                <!-- 加载中提示 -->
+                <template v-slot:loading>
+                    <div class="text-center py-4">
+                        <v-progress-circular indeterminate color="pink" size="32"></v-progress-circular>
+                        <div class="mt-2 text-body-2 text-pink-accent-2">✨ 正在努力加载中...</div>
+                    </div>
+                </template>
 
-                    <v-list-item-title class="font-weight-medium text-body-1">
-                        {{ value.name }}
-                    </v-list-item-title>
+                <!-- 没有更多数据提示 -->
+                <template v-slot:empty>
+                    <div class="text-center py-6">
+                        <v-icon size="48" color="grey-lighten-1">mdi-check-circle-outline</v-icon>
+                        <div class="mt-2 text-body-2 text-medium-emphasis">🎵 已经到底啦~</div>
+                    </div>
+                </template>
 
-                    <v-list-item-subtitle class="mt-1">
-                        <span class="text-truncate">
-                            <v-icon size="x-small" class="mr-1">mdi-account-music</v-icon>
-                            {{value.ar.map((a: any) => a.name).join(' / ')}}
-                        </span>
-                        <br v-if="value.al.name" />
-                        <v-chip v-if="value.al.name" size="x-small" class="mt-1" variant="tonal">
-                            <v-icon start size="x-small">mdi-album</v-icon>
-                            {{ value.al.name }}
-                        </v-chip>
-                    </v-list-item-subtitle>
+                <!-- 加载错误提示 -->
+                <template v-slot:error>
+                    <div class="text-center py-6">
+                        <v-icon size="48" color="error">mdi-alert-circle-outline</v-icon>
+                        <div class="mt-2 text-body-2 text-error">😢 加载失败了...</div>
+                        <v-btn size="small" variant="text" color="primary" class="mt-2"
+                            @click="$event.target.closest('.v-infinite-scroll').__vueParentComponent.ctx.retry()">
+                            再试一次 💪
+                        </v-btn>
+                    </div>
+                </template>
 
-                    <template v-slot:append>
-                        <v-btn icon="mdi-play-circle" size="large" variant="text" @click.stop="async () => {
-                            await player.addTrack(String(value.id), true)
-                        }" />
-                    </template>
-                </v-list-item>
-            </v-list>
+                <template v-for="(value, index) in songs" :key="value.id">
+                    <v-list-item class="song-item" @click="async () => {
+                        await player.addTrack(String(value.id), true)
+                    }">
+                        <template v-slot:prepend>
+                            <v-avatar size="56" rounded="lg">
+                                <v-img :src="`${value.al.picUrl}?param=56y56`" cover>
+                                    <template v-slot:placeholder>
+                                        <div class="d-flex align-center justify-center fill-height">
+                                            <v-progress-circular color="grey-lighten-4"
+                                                indeterminate></v-progress-circular>
+                                        </div>
+                                    </template>
+                                </v-img>
+                            </v-avatar>
+                        </template>
 
-            <!-- 加载更多提示 -->
-            <div v-if="hasMore && !loading" class="text-center pa-4 text-caption text-medium-emphasis">
-                向下滚动加载更多...
-            </div>
-            <div v-if="loading" class="d-flex justify-center pa-4">
-                <v-progress-circular indeterminate size="32" width="3"></v-progress-circular>
-            </div>
-            <div v-if="!hasMore && songs.length > 0" class="text-center pa-4 text-caption text-medium-emphasis">
-                已加载全部歌曲
-            </div>
+                        <v-list-item-title class="font-weight-medium text-body-1">
+                            {{ value.name }}
+                        </v-list-item-title>
+
+                        <v-list-item-subtitle class="mt-1">
+                            <span class="text-truncate">
+                                <v-icon size="x-small" class="mr-1">mdi-account-music</v-icon>
+                                {{value.ar.map((a: any) => a.name).join(' / ')}}
+                            </span>
+                            <br v-if="value.al.name" />
+                            <v-chip v-if="value.al.name" size="x-small" class="mt-1" variant="tonal">
+                                <v-icon start size="x-small">mdi-album</v-icon>
+                                {{ value.al.name }}
+                            </v-chip>
+                        </v-list-item-subtitle>
+
+                        <template v-slot:append>
+                            <v-btn icon="mdi-play-circle" size="large" variant="text" @click.stop="async () => {
+                                await player.addTrack(String(value.id), true)
+                            }" />
+                        </template>
+                    </v-list-item>
+                </template>
+            </v-infinite-scroll>
         </v-card>
 
         <!-- 空状态 -->
@@ -211,7 +231,7 @@ async function playAll() {
 
         // 播放第一首
         if (player.playlist.value.length > 0) {
-            player.playIndex(0);
+            player.playIndex(0, true);
         }
     } catch (error) {
         console.error('播放全部失败:', error);
@@ -237,58 +257,37 @@ async function addAllToPlaylist() {
     }
 }
 
-// 滚动加载相关
-let scrollTimer: any = null;
-
-function attach() {
-    const el = document.querySelector('.content') as HTMLElement | null;
-    if (!el) {
-        console.warn('未找到 .content 滚动容器');
+// 无限滚动加载
+async function loadMore({ done }: { done: (status: 'ok' | 'error' | 'empty') => void }) {
+    if (!hasMore.value || loading.value) {
+        done('empty');
         return;
     }
-    el.addEventListener('scroll', onScrollHandler, { passive: true });
-    console.log('已绑定滚动事件到 .content 容器');
-}
 
-function detach() {
-    const el = document.querySelector('.content') as HTMLElement | null;
-    if (!el) return;
-    el.removeEventListener('scroll', onScrollHandler);
-    console.log('已解绑滚动事件');
-}
+    loading.value = true;
 
-onMounted(() => {
-    // 延迟绑定，确保 DOM 完全渲染
-    setTimeout(() => attach(), 100);
-});
-onUnmounted(() => detach());
+    try {
+        const res = await api.getPlaylist(PlaylistUID.value, PlaylistOffset);
 
-// keep-alive 下的切换
-onActivated(() => {
-    setTimeout(() => attach(), 100);
-});
-onDeactivated(() => detach());
-
-function onScrollHandler(e: Event) {
-    const el = e.target as HTMLElement;
-    const { scrollTop, clientHeight, scrollHeight } = el;
-
-    // 防抖处理
-    if (scrollTimer) {
-        clearTimeout(scrollTimer);
-    }
-
-    scrollTimer = setTimeout(() => {
-        // 当距离底部还有 100px 时加载更多
-        const distanceToBottom = scrollHeight - scrollTop - clientHeight;
-        if (distanceToBottom <= 100 && hasMore.value && !loading.value) {
-            console.log('触发加载更多，当前歌曲数:', songs.value.length);
-            getPlaylist(PlaylistUID.value);
+        if (res.songs && res.songs.length > 0) {
+            songs.value.push(...res.songs);
+            PlaylistOffset += 10;
+            hasMore.value = true;
+            done('ok');
+        } else {
+            hasMore.value = false;
+            done('empty');
         }
-    }, 150);
+    } catch (error) {
+        console.error('加载更多歌曲失败:', error);
+        done('error');
+    } finally {
+        loading.value = false;
+    }
 }
 
-function getPlaylist(id: string) {
+// 获取歌单（初始化）
+async function getPlaylist(id: string) {
     if (id !== PlaylistUID.value) {
         PlaylistUID.value = id;
         PlaylistOffset = 1;
@@ -298,28 +297,30 @@ function getPlaylist(id: string) {
 
     loading.value = true;
 
-    api.getPlaylist(id, PlaylistOffset).then((res) => {
-        if (PlaylistOffset > 1) {
-            songs.value.push(...res.songs);
-        } else {
-            songs.value = res.songs;
-        }
-
-        // 判断是否还有更多数据
-        hasMore.value = res.songs.length > 0;
+    try {
+        const res = await api.getPlaylist(id, PlaylistOffset);
+        songs.value = res.songs || [];
+        hasMore.value = res.songs && res.songs.length > 0;
         PlaylistOffset += 10;
-    }).catch((error) => {
+    } catch (error) {
         console.error('获取播放列表失败:', error);
         hasMore.value = false;
-    }).finally(() => {
+    } finally {
         loading.value = false;
-    });
+    }
 }
 </script>
 <style scoped>
 .playlist-wrapper {
     width: 100%;
     padding: 16px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* 防止浏览器滚动条 */
+    overflow-x: hidden;
+    /* 禁止横向滚动 */
 }
 
 /* 歌单头部布局 */
@@ -413,6 +414,11 @@ function getPlaylist(id: string) {
 .playlist-content {
     border-radius: 12px;
     overflow: visible;
+    flex: 1;
+    min-height: 0;
+    /* 允许flex子项收缩 */
+    display: flex;
+    flex-direction: column;
 }
 
 .song-item {
@@ -434,6 +440,34 @@ function getPlaylist(id: string) {
 
 .empty-state {
     margin-top: 48px;
+}
+
+/* 无限滚动提示样式 */
+.v-infinite-scroll__loading,
+.v-infinite-scroll__empty,
+.v-infinite-scroll__error {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+/* v-infinite-scroll 自适应高度 */
+:deep(.v-infinite-scroll) {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* 禁止横向滚动 */
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* 响应式调整 */

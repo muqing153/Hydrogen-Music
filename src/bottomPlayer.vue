@@ -28,20 +28,21 @@
 
                 <!-- 中间 -->
                 <v-col cols="6" class="text-center mobile-controls">
-                    <v-btn icon @click='player.prev()' variant="text" size="x-small"><v-icon
+                    <v-btn icon @click='player.prev()' variant="text"><v-icon
                             size="small">mdi-skip-previous</v-icon></v-btn>
-                    <v-btn icon @click='player.toggle()' variant="text" size="small"><v-icon>{{ player.isPlaying.value ?
+                    <v-btn icon @click='player.toggle()' variant="text"><v-icon>{{ player.isPlaying.value ?
                         'mdi-pause'
                         : 'mdi-play'
                             }}</v-icon></v-btn>
-                    <v-btn icon @click='player.next()' variant="text" size="x-small"><v-icon
+                    <v-btn icon @click='player.next()' variant="text"><v-icon
                             size="small">mdi-skip-next</v-icon></v-btn>
                 </v-col>
 
                 <!-- 右侧 -->
                 <v-col cols="3" class="text-end mobile-playlist-btn">
-                    <v-btn icon @click='navigationrightShow = !navigationrightShow' size="small"><v-icon
-                            size="small">mdi-playlist-music</v-icon></v-btn>
+                    <v-btn icon @click='navigationrightShow = !navigationrightShow' variant="text">
+                        <v-icon size="small">mdi-playlist-music</v-icon>
+                    </v-btn>
                 </v-col>
             </v-row>
 

@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { computed, ref } from 'vue'
-import { cookie, getLikedSongs, getLyric, getPlaylist, IP, likeMusic } from './api'
+import { getCookie, getLikedSongs, getLyric, getPlaylist, IP, likeMusic } from './api'
 
 export interface Track {
   id: string
@@ -96,20 +96,31 @@ export class AudioPlayer {
     }
     this.playMode.value = mode
 
-    // 只在切换到随机模式时打乱播放列表
-    if (mode === PlayMode.Shuffle) {
-      this.shufflePlaylist()
-    }
+    // 随机播放模式不再打乱歌单，改为动态调整顺序
   }
 
-  /** 打乱播放列表（创建副本，避免修改原数组） */
-  private shufflePlaylist() {
-    const shuffled = [...this.playlist.value]
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!]
+  /** 随机播放时调整歌曲顺序：将选中的歌曲移到当前歌曲后面 */
+  private shuffleNextTrack(currentIndex: number, randomIndex: number) {
+    if (currentIndex === randomIndex || this.playlist.value.length <= 1) {
+      return randomIndex
     }
-    this.playlist.value = shuffled
+
+    const playlist = [...this.playlist.value]
+    const selectedTrack = playlist[randomIndex]
+
+    // 移除选中的歌曲
+    playlist.splice(randomIndex, 1)
+
+    // 如果选中的歌曲在当前歌曲之前，插入到当前歌曲后面
+    // 如果选中的歌曲在当前歌曲之后，也插入到当前歌曲后面
+    const insertIndex = currentIndex + 1
+    playlist.splice(insertIndex, 0, selectedTrack!)
+
+    // 更新播放列表
+    this.playlist.value = playlist
+
+    // 返回新的索引（总是当前歌曲的下一首）
+    return currentIndex + 1
   }
 
   /** 添加歌曲 **/
@@ -127,16 +138,15 @@ export class AudioPlayer {
           return
         }
 
-        // 并行请求歌曲 URL 和详情，提升性能
-        const [urlRes, infoRes] = await Promise.all([
-          axios.get(`${IP}/song/url/v1?id=${data}&level=exhigh&cookie=${cookie}`),
-          axios.get(`${IP}/song/detail?ids=${data}&cookie=${cookie}`),
-        ])
+        // 获取歌曲详情
+        const infoRes = await axios.get(
+          `${IP}/song/detail?ids=${data}${getCookie() ? '&cookie=' + getCookie() : ''}`,
+        )
 
         const songData = infoRes.data.songs[0]
         track = {
           id: data,
-          url: urlRes.data.data[0].url,
+          url: `${IP}/song/url/v1/302?id=${data}&level=exhigh${getCookie() ? '&cookie=' + getCookie() : ''}`, // 直接使用 302 接口 URL
           name: songData.name,
           artist: songData.ar.map((a: any) => a.name).join('/'),
           picUrl: songData.al.picUrl + '?param=512y512',
@@ -159,7 +169,7 @@ export class AudioPlayer {
   }
 
   /** 跳到指定歌曲 **/
-  playIndex(i: number | string) {
+  playIndex(i: number | string, fromListClick = false) {
     if (typeof i === 'string') {
       i = this.playlist.value.findIndex((t) => t.id === i)
     }
@@ -167,6 +177,25 @@ export class AudioPlayer {
     if (i < 0 || i >= this.playlist.value.length) {
       console.warn('无效的播放索引:', i)
       return
+    }
+
+    // 在随机模式下，如果是从列表点击（不是上一首/下一首），将歌曲移到当前歌曲后面
+    if (this.playMode.value === PlayMode.Shuffle && fromListClick && i !== this.index.value + 1) {
+      const playlist = [...this.playlist.value]
+      const selectedTrack = playlist[i]
+
+      // 移除选中的歌曲
+      playlist.splice(i, 1)
+
+      // 插入到当前歌曲后面
+      const insertIndex = this.index.value + 1
+      playlist.splice(insertIndex, 0, selectedTrack!)
+
+      // 更新播放列表
+      this.playlist.value = playlist
+
+      // 新的索引是当前歌曲的下一首
+      i = this.index.value + 1
     }
 
     this.index.value = i
@@ -192,37 +221,17 @@ export class AudioPlayer {
       this.PlaylistUID.value = ids
       const res = await getPlaylist(ids)
 
-      // 并行获取所有歌曲的 URL 和歌词，提升加载速度
+      // 并行获取所有歌曲的基本信息（不获取歌词，提升加载速度）
       const songs = await Promise.all(
         res.songs.map(async (data: any) => {
           try {
-            // 并行请求：URL + 歌词
-            const [urlRes, lyricData] = await Promise.all([
-              axios.get(`${IP}/song/url/v1?id=${data.id}&level=exhigh&cookie=${cookie}`),
-              getLyric(data.id).catch((err) => {
-                console.warn(`获取歌曲 ${data.id} 歌词失败:`, err)
-                return null
-              }),
-            ])
-
-            // 🔍 调试日志：检查歌词数据结构
-            if (lyricData) {
-              console.log(`歌曲 ${data.id} 歌词数据:`, {
-                hasLrc: !!lyricData.lrc?.lyric,
-                hasTlyric: !!lyricData.tlyric?.lyric,
-                lrcLength: lyricData.lrc?.lyric?.length || 0,
-              })
-            } else {
-              console.warn(`歌曲 ${data.id} 没有歌词数据`)
-            }
-
             return {
               id: data.id,
               name: data.name,
               artist: data.ar.map((a: any) => a.name).join('/'),
               picUrl: data.al.picUrl + '?param=512y512',
-              url: urlRes.data.data[0]?.url || '',
-              lyric: lyricData, // ✅ 添加歌词数据
+              url: `${IP}/song/url/v1/302?id=${data.id}&level=exhigh${getCookie() ? '&cookie=' + getCookie() : ''}`, // 直接使用 302 接口 URL
+              lyric: null, // 歌词在需要时再获取
             } as Track
           } catch (error) {
             console.error(`获取歌曲 ${data.id} 信息失败:`, error)
@@ -273,14 +282,13 @@ export class AudioPlayer {
 
       try {
         // 重新获取歌曲信息
-        const [urlRes, infoRes] = await Promise.all([
-          axios.get(`${IP}/song/url/v1?id=${id}&level=exhigh&cookie=${cookie}`),
-          axios.get(`${IP}/song/detail?ids=${id}&cookie=${cookie}`),
-        ])
+        const infoRes = await axios.get(
+          `${IP}/song/detail?ids=${id}${getCookie() ? '&cookie=' + getCookie() : ''}`,
+        )
 
         const newData: Track = {
           id: id,
-          url: urlRes.data.data[0].url,
+          url: `${IP}/song/url/v1/302?id=${id}&level=exhigh${getCookie() ? '&cookie=' + getCookie() : ''}`, // 直接使用 302 接口 URL
           name: infoRes.data.songs[0].name,
           artist: infoRes.data.songs[0].ar.map((a: any) => a.name).join('/'),
           picUrl: infoRes.data.songs[0].al.picUrl + '?param=512y512',
@@ -324,10 +332,21 @@ export class AudioPlayer {
         newIndex = this.index.value > 0 ? this.index.value - 1 : this.playlist.value.length - 1
         break
       case PlayMode.Shuffle:
-        newIndex = Math.floor(Math.random() * this.playlist.value.length)
-        break
+        // 随机模式：回到上一首（当前歌曲的前一首），不调整列表顺序
+        newIndex = this.index.value > 0 ? this.index.value - 1 : this.playlist.value.length - 1
+        this.index.value = newIndex
+        const track = this.playlist.value[newIndex]
+        if (track) {
+          this.audio.src = track.url
+          this.audio.load()
+          this.play().catch((err) => {
+            console.error('播放失败:', err)
+          })
+        }
+        return // 直接返回，不调用 playIndex
       case PlayMode.Loop:
-        newIndex = this.index.value // 单曲循环，不变
+        // 单曲循环模式：允许手动切换到上一首
+        newIndex = this.index.value > 0 ? this.index.value - 1 : this.playlist.value.length - 1
         break
       default:
         newIndex = this.index.value > 0 ? this.index.value - 1 : this.playlist.value.length - 1
@@ -350,12 +369,13 @@ export class AudioPlayer {
         newIndex = (this.index.value + 1) % this.playlist.value.length
         break
       case PlayMode.Shuffle:
-        // 随机播放
-        newIndex = Math.floor(Math.random() * this.playlist.value.length)
+        // 随机播放：随机选择一首歌，并将其移到当前歌曲后面
+        const randomIndex = Math.floor(Math.random() * this.playlist.value.length)
+        newIndex = this.shuffleNextTrack(this.index.value, randomIndex)
         break
       case PlayMode.Loop:
-        // 单曲循环：不变
-        newIndex = this.index.value
+        // 单曲循环模式：允许手动切换到下一首
+        newIndex = (this.index.value + 1) % this.playlist.value.length
         break
       default:
         newIndex = (this.index.value + 1) % this.playlist.value.length

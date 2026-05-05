@@ -57,15 +57,15 @@ function lrcNull() {
     }]
 }
 watch(
-    () => player.currentTrack.value,
-    (track) => {
-        if (!track?.lyric) {
+    () => player.currentTrack.value?.lyric,
+    (lyric) => {
+        if (!lyric) {
             lrclsit.value = []
             return
         }
 
-        const lrcText = track.lyric?.lrc?.lyric
-        const tText = track.lyric?.tlyric?.lyric
+        const lrcText = lyric.lrc?.lyric
+        const tText = lyric.tlyric?.lyric
 
         if (!lrcText) {
             lrclsit.value = []
@@ -74,7 +74,7 @@ watch(
 
         lrclsit.value = parseNeteaseLyric(lrcText, tText)
     },
-    { immediate: true }
+    { immediate: true, deep: true }
 )
 // window.lrclist = lrclsit
 
