@@ -358,8 +358,8 @@ export async function recommendResource(forceRefresh: boolean = false): Promise<
 // 获取歌单
 export async function getPlaylist(uid: string, offset: number = 1): Promise<any> {
   // 首次加载 30 首，后续每次加载 10 首
-  const limit = offset === 1 ? 30 : 10;
-  
+  const limit = offset === 1 ? 30 : 10
+
   let data = (
     await axios({
       method: 'get',
@@ -368,6 +368,47 @@ export async function getPlaylist(uid: string, offset: number = 1): Promise<any>
   ).data
   return Promise.resolve(data)
 }
+// 获取歌单所有歌曲（支持分页加载全部）
+export async function getPlaylistAllTracks(id: string): Promise<any[]> {
+  const allTracks: any[] = []
+  let offset = 0
+  const limit = 100 // 每次请求最大限制
+
+  try {
+    while (true) {
+      const response = await axios({
+        method: 'get',
+        url: `${IP}/playlist/track/all`,
+        params: {
+          id,
+          limit,
+          offset,
+          ...(cookieValue ? { cookie: cookieValue } : {}),
+        },
+      })
+
+      const data = response.data
+      if (!data || !data.songs || data.songs.length === 0) {
+        break
+      }
+
+      allTracks.push(...data.songs)
+      offset += limit
+
+      // 如果返回的歌曲数量小于限制，说明已经是最后一页
+      if (data.songs.length < limit) {
+        break
+      }
+    }
+
+    console.log(`[API] 获取歌单 ${id} 全部歌曲完成，共 ${allTracks.length} 首`)
+    return allTracks
+  } catch (error) {
+    console.error(`[API] 获取歌单 ${id} 全部歌曲失败:`, error)
+    throw error
+  }
+}
+
 
 // 获取歌单详情
 export async function getPlaylistDetail(id: string): Promise<any> {

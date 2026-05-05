@@ -29,7 +29,7 @@
                     </v-avatar>
                     <span class="creator-name">{{ playlistDetail.creator?.nickname || '未知' }}</span>
                     <span class="create-time">{{ playlistDetail.createTime ? formatDate(playlistDetail.createTime) : ''
-                        }}创建</span>
+                    }}创建</span>
                 </div>
 
                 <!-- 占位空间，将按钮推到底部 -->
@@ -221,18 +221,8 @@ async function playAll() {
 
     isPlayingAll.value = true;
     try {
-        // 清空当前播放列表
-        player.clearPlaylist();
-
-        // 逐个添加歌曲到播放列表
-        for (const song of songs.value) {
-            await player.addTrack(String(song.id), false);
-        }
-
-        // 播放第一首
-        if (player.playlist.value.length > 0) {
-            player.playIndex(0, true);
-        }
+        // 使用 player.loadPlaylist 方法，并行加载所有歌曲，性能更优
+        await player.loadPlaylist(PlaylistUID.value);
     } catch (error) {
         console.error('播放全部失败:', error);
     } finally {
@@ -246,10 +236,17 @@ async function addAllToPlaylist() {
 
     isAddingAll.value = true;
     try {
-        // 逐个添加歌曲到播放列表（不立即播放）
-        for (const song of songs.value) {
-            await player.addTrack(String(song.id), false);
-        }
+        // 并行添加所有歌曲到播放列表（不立即播放）
+        // 使用 Promise.all 并行添加所有歌曲
+        await Promise.all(
+            songs.value.map(async (song: any) => {
+                try {
+                    await player.addTrack(String(song.id), false);
+                } catch (error) {
+                    console.error(`添加歌曲 ${song.id} 失败:`, error);
+                }
+            })
+        );
     } catch (error) {
         console.error('加入播放列表失败:', error);
     } finally {

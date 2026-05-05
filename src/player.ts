@@ -62,7 +62,16 @@ export class AudioPlayer {
       this.duration.value = this.audio.duration
     })
     this.audio.addEventListener('ended', () => {
-      this.next()
+      // 单曲循环模式下，重新播放当前歌曲
+      if (this.playMode.value === PlayMode.Loop) {
+        this.audio.currentTime = 0
+        this.audio.play().catch((err) => {
+          console.error('单曲循环播放失败:', err)
+        })
+      } else {
+        // 其他模式下切换到下一首
+        this.next()
+      }
     })
 
     this.source = this.audioContext.createMediaElementSource(this.audio)
@@ -111,16 +120,18 @@ export class AudioPlayer {
     // 移除选中的歌曲
     playlist.splice(randomIndex, 1)
 
-    // 如果选中的歌曲在当前歌曲之前，插入到当前歌曲后面
-    // 如果选中的歌曲在当前歌曲之后，也插入到当前歌曲后面
-    const insertIndex = currentIndex + 1
+    // 重新计算 currentIndex（如果 randomIndex < currentIndex，则 currentIndex 需要减 1）
+    const adjustedCurrentIndex = randomIndex < currentIndex ? currentIndex - 1 : currentIndex
+
+    // 插入到当前歌曲后面
+    const insertIndex = adjustedCurrentIndex + 1
     playlist.splice(insertIndex, 0, selectedTrack!)
 
     // 更新播放列表
     this.playlist.value = playlist
 
     // 返回新的索引（总是当前歌曲的下一首）
-    return currentIndex + 1
+    return adjustedCurrentIndex + 1
   }
 
   /** 添加歌曲 **/
@@ -361,8 +372,14 @@ export class AudioPlayer {
     let newIndex: number
     switch (this.playMode.value) {
       case PlayMode.Sequential:
-        // 顺序播放：到最后一首后停止或循环
-        newIndex = (this.index.value + 1) % this.playlist.value.length
+        // 顺序播放：到最后一首后停止
+        if (this.index.value < this.playlist.value.length - 1) {
+          newIndex = this.index.value + 1
+        } else {
+          // 最后一首，停止播放
+          this.pause()
+          return
+        }
         break
       case PlayMode.ListLoop:
         // 列表循环：到最后一首后回到第一首
@@ -374,7 +391,8 @@ export class AudioPlayer {
         newIndex = this.shuffleNextTrack(this.index.value, randomIndex)
         break
       case PlayMode.Loop:
-        // 单曲循环模式：允许手动切换到下一首
+        // 单曲循环模式：不应该调用 next()，因为 ended 事件中已经处理了
+        // 但如果用户手动点击下一首按钮，允许切换
         newIndex = (this.index.value + 1) % this.playlist.value.length
         break
       default:

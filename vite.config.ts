@@ -6,6 +6,7 @@ import { defineConfig } from 'vite'
 import wasm from 'vite-plugin-wasm'
 
 import ViteFonts from 'unplugin-fonts/vite'
+import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -28,6 +29,20 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // Node.js polyfills
+      buffer: 'buffer',
+      process: 'process/browser',
+      stream: 'stream-browserify',
+      util: 'util',
+    },
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      // Node.js global to browser globalThis
+      define: {
+        global: 'globalThis',
+      },
+      plugins: [NodeModulesPolyfillPlugin()],
     },
   },
   server: {

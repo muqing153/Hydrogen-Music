@@ -12,17 +12,16 @@
                     <div class="text-body-2 text-medium-emphasis mt-1">
                         {{ getVipTypeText(userInfo?.profile?.vipType || 0) }}
                     </div>
+                    <div class="text-body-2 text-medium-emphasis mt-1">
+                        {{ userInfo?.profile?.signature || '这家伙很懒，什么也没有留下' }}
+                    </div>
                 </v-card-title>
 
                 <v-card-text class="text-center">
-                    <v-alert type="success" variant="tonal" class="mb-4">
-                        <v-icon start>mdi-check-circle</v-icon>
-                        您已成功登录
-                    </v-alert>
 
                     <div class="text-body-2 text-medium-emphasis mb-4">
                         <v-icon size="small" class="mr-1">mdi-shield-check</v-icon>
-                        当前账号处于安全状态
+                        请勿在危险设备登录，如果长时间未使用，请退出登录<br>避免Cookie泄露或者被他人使用
                     </div>
                 </v-card-text>
 
