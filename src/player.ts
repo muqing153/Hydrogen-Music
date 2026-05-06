@@ -194,19 +194,30 @@ export class AudioPlayer {
     if (this.playMode.value === PlayMode.Shuffle && fromListClick && i !== this.index.value + 1) {
       const playlist = [...this.playlist.value]
       const selectedTrack = playlist[i]
+      const currentIndex = this.index.value
 
       // 移除选中的歌曲
       playlist.splice(i, 1)
 
-      // 插入到当前歌曲后面
-      const insertIndex = this.index.value + 1
+      // 计算新的插入位置
+      let insertIndex = currentIndex + 1
+
+      // 如果选中的歌曲在当前歌曲之前，移除后当前索引会前移，需要调整插入位置
+      if (i < currentIndex) {
+        insertIndex = currentIndex // 因为移除前面的元素后，currentIndex 实际指向了原 currentIndex+1 的位置
+      }
+
+      // 确保插入位置不超出范围
+      insertIndex = Math.min(insertIndex, playlist.length)
+
+      // 插入到计算后的位置
       playlist.splice(insertIndex, 0, selectedTrack!)
 
       // 更新播放列表
       this.playlist.value = playlist
 
-      // 新的索引是当前歌曲的下一首
-      i = this.index.value + 1
+      // 新的索引是插入位置
+      i = insertIndex
     }
 
     this.index.value = i

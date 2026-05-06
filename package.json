@@ -17,7 +17,6 @@
   "dependencies": {
     "@fontsource/roboto": "^5.2.8",
     "@mdi/font": "^7.4.47",
-    "@neteasecloudmusicapienhanced/api": "^4.32.0",
     "axios": "^1.13.2",
     "unplugin-vue-components": "^30.0.0",
     "vue": "^3.5.25",
