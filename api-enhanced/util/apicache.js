@@ -146,7 +146,7 @@ function ApiCache() {
       try {
         redis.hset(key, 'response', JSON.stringify(value))
         redis.hset(key, 'duration', duration)
-        redis.expire(key, duration / 1000, expireCallback || function () {})
+        redis.expire(key, duration / 1000, expireCallback || function () { })
       } catch (err) {
         debug('[apicache] error in redis.hset()')
       }
@@ -363,10 +363,10 @@ function ApiCache() {
     } else if (target) {
       debug(
         'clearing ' +
-          (isAutomatic ? 'expired' : 'cached') +
-          ' entry for "' +
-          target +
-          '"',
+        (isAutomatic ? 'expired' : 'cached') +
+        ' entry for "' +
+        target +
+        '"',
       )
       clearTimeout(timers[target])
       delete timers[target]
@@ -494,7 +494,7 @@ function ApiCache() {
      * A Function for non tracking performance
      */
     function NOOPCachePerformance() {
-      this.report = this.hit = this.miss = function () {} // noop;
+      this.report = this.hit = this.miss = function () { } // noop;
     }
 
     /**
