@@ -150,5 +150,21 @@ function startAudioView() {
     .mobile-track-artist {
         font-size: 0.7rem !important;
     }
+
+    /* 手机端隐藏中间播控按钮 */
+    .mobile-controls {
+        display: none;
+    }
+
+    /* 调整左右两侧列宽，让它们占据更多空间 */
+    .mobile-player-row>.v-col:first-child {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+
+    .mobile-player-row>.v-col:last-child {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
 }
 </style>

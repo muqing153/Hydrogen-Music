@@ -29,7 +29,7 @@
                     </v-avatar>
                     <span class="creator-name">{{ playlistDetail.creator?.nickname || '未知' }}</span>
                     <span class="create-time">{{ playlistDetail.createTime ? formatDate(playlistDetail.createTime) : ''
-                    }}创建</span>
+                        }}创建</span>
                 </div>
 
                 <!-- 占位空间，将按钮推到底部 -->
@@ -61,10 +61,13 @@
         </div>
 
         <!-- 歌曲数量提示 -->
-        <div class="songs-header d-flex align-center justify-space-between mb-2" v-if="songs.length > 0">
+        <div class="songs-header d-flex align-center justify-space-between mb-2" v-if="playlistDetail?.trackCount">
             <div class="text-body-2 text-medium-emphasis">
                 <v-icon size="small" class="mr-1">mdi-music-note</v-icon>
-                {{ songs.length }} 首歌曲
+                {{ playlistDetail.trackCount }} 首歌曲
+            </div>
+            <div v-if="songs.length < playlistDetail.trackCount" class="text-caption text-medium-emphasis">
+                已加载 {{ songs.length }} 首
             </div>
         </div>
 
@@ -167,7 +170,7 @@ const playlistName = ref('');
 const playlistDetail = ref<any>(null);
 const isPlayingAll = ref(false);
 const isAddingAll = ref(false);
-let PlaylistOffset = 1;
+let PlaylistOffset = 0;
 let id = route.query.id as string;
 
 if (id === undefined || id === '' || id === 'undefined' || id === 'null' || id === null) {
@@ -190,9 +193,41 @@ async function getPlaylistDetailInfo(id: string) {
         if (res && res.playlist) {
             playlistDetail.value = res.playlist;
             playlistName.value = res.playlist.name || '';
+
+            // 如果歌曲数量较少（<=100首），尝试一次性加载所有歌曲
+            const trackCount = res.playlist.trackCount || 0;
+            if (trackCount > 0 && trackCount <= 100 && songs.value.length === 0) {
+                console.log(`[MusicPlaylist] 歌单歌曲数量较少 (${trackCount}首)，尝试一次性加载`);
+                await loadAllSongs(id, trackCount);
+            }
         }
     } catch (error) {
         console.error('获取歌单详情失败:', error);
+    }
+}
+
+// 一次性加载所有歌曲
+async function loadAllSongs(id: string, totalTracks: number) {
+    loading.value = true;
+    try {
+        // 计算需要加载的次数（每次10首）
+        const batches = Math.ceil(totalTracks / 10);
+        const allSongs: any[] = [];
+
+        for (let i = 0; i < batches; i++) {
+            const res = await api.getPlaylist(id, i);
+            if (res.songs && res.songs.length > 0) {
+                allSongs.push(...res.songs);
+            }
+        }
+
+        songs.value = allSongs;
+        hasMore.value = false;
+        console.log(`[MusicPlaylist] 已加载所有 ${allSongs.length} 首歌曲`);
+    } catch (error) {
+        console.error('加载所有歌曲失败:', error);
+    } finally {
+        loading.value = false;
     }
 }
 
@@ -222,7 +257,7 @@ async function playAll() {
     isPlayingAll.value = true;
     try {
         // 使用 player.loadPlaylist 方法，并行加载所有歌曲，性能更优
-        await player.loadPlaylist(PlaylistUID.value);
+        await player.loadPlaylist(PlaylistUID.value, true);
     } catch (error) {
         console.error('播放全部失败:', error);
     } finally {
@@ -287,7 +322,7 @@ async function loadMore({ done }: { done: (status: 'ok' | 'error' | 'empty') => 
 async function getPlaylist(id: string) {
     if (id !== PlaylistUID.value) {
         PlaylistUID.value = id;
-        PlaylistOffset = 1;
+        PlaylistOffset = 0;
         songs.value = [];
         hasMore.value = true;
     }

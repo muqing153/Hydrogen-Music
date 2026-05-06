@@ -12,10 +12,6 @@
             <v-text-field v-model="searchQuery" prepend-inner-icon="mdi-magnify" label="搜索歌曲、歌手、专辑" variant="outlined"
                 density="comfortable" clearable @keyup.enter="handleSearch" @click:clear="clearSearch" @input="onInput"
                 @focus="onFocus" autofocus hide-details class="search-input" ref="searchFieldRef">
-                <!-- 搜索建议菜单 -->
-                <template v-slot:append-inner v-if="suggestions.length > 0">
-                    <v-btn icon="mdi-close" size="x-small" variant="text" @click="closeSuggestions"></v-btn>
-                </template>
             </v-text-field>
 
             <!-- 搜索建议下拉菜单 -->

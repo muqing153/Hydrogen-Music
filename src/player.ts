@@ -1,6 +1,14 @@
 import axios from 'axios'
 import { computed, ref } from 'vue'
-import { getCookie, getLikedSongs, getLyric, getPlaylist, IP, likeMusic } from './api'
+import {
+  getCookie,
+  getLikedSongs,
+  getLyric,
+  getPlaylist,
+  getPlaylistAllTracks,
+  IP,
+  likeMusic,
+} from './api'
 
 export interface Track {
   id: string
@@ -232,8 +240,8 @@ export class AudioPlayer {
     }
   }
 
-  // 加载歌单
-  async loadPlaylist(ids: string) {
+  // 加载歌单 支持加载全部
+  async loadPlaylist(ids: string, loadAll: boolean = false) {
     try {
       // 清空歌单列表
       this.playlist.value = []
@@ -241,8 +249,12 @@ export class AudioPlayer {
       this.pause()
       // 写入全局当前播放歌单
       this.PlaylistUID.value = ids
-      const res = await getPlaylist(ids)
-
+      let res: any
+      if (loadAll) {
+        res = await getPlaylistAllTracks(ids)
+      } else {
+        res = await getPlaylist(ids)
+      }
       // 并行获取所有歌曲的基本信息（不获取歌词，提升加载速度）
       const songs = await Promise.all(
         res.songs.map(async (data: any) => {

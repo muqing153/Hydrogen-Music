@@ -356,7 +356,7 @@ export async function recommendResource(forceRefresh: boolean = false): Promise<
 }
 
 // 获取歌单
-export async function getPlaylist(uid: string, offset: number = 1): Promise<any> {
+export async function getPlaylist(uid: string, offset: number = 0): Promise<any> {
   // 首次加载 30 首，后续每次加载 10 首
   const limit = offset === 1 ? 30 : 10
 
@@ -368,41 +368,16 @@ export async function getPlaylist(uid: string, offset: number = 1): Promise<any>
   ).data
   return Promise.resolve(data)
 }
-// 获取歌单所有歌曲（支持分页加载全部）
+// 获取歌单所有歌曲
 export async function getPlaylistAllTracks(id: string): Promise<any[]> {
-  const allTracks: any[] = []
-  let offset = 0
-  const limit = 100 // 每次请求最大限制
-
   try {
-    while (true) {
-      const response = await axios({
+    const data = (
+      await axios({
         method: 'get',
-        url: `${IP}/playlist/track/all`,
-        params: {
-          id,
-          limit,
-          offset,
-          ...(cookieValue ? { cookie: cookieValue } : {}),
-        },
+        url: `${IP}/playlist/track/all?id=${id}${cookieValue ? '&cookie=' + cookieValue : ''}`,
       })
-
-      const data = response.data
-      if (!data || !data.songs || data.songs.length === 0) {
-        break
-      }
-
-      allTracks.push(...data.songs)
-      offset += limit
-
-      // 如果返回的歌曲数量小于限制，说明已经是最后一页
-      if (data.songs.length < limit) {
-        break
-      }
-    }
-
-    console.log(`[API] 获取歌单 ${id} 全部歌曲完成，共 ${allTracks.length} 首`)
-    return allTracks
+    ).data
+    return Promise.resolve(data)
   } catch (error) {
     console.error(`[API] 获取歌单 ${id} 全部歌曲失败:`, error)
     throw error
@@ -599,5 +574,82 @@ export async function searchHot(): Promise<any> {
   } catch (error) {
     console.error('获取热门搜索失败:', error)
     return { data: [] }
+  }
+}
+
+// 获取用户歌单
+export async function getUserPlaylist(
+  uid: number,
+  limit: number = 30,
+  offset: number = 0,
+): Promise<any> {
+  if (!isLoggedIn()) {
+    console.log('[API] getUserPlaylist: 未登录')
+    return { playlist: [] }
+  }
+
+  try {
+    const response = await axios({
+      method: 'get',
+      url: `${IP}/user/playlist`,
+      params: {
+        uid,
+        limit,
+        offset,
+        cookie: cookieValue,
+      },
+    })
+    return response.data
+  } catch (error) {
+    console.error('获取用户歌单失败:', error)
+    throw error
+  }
+}
+
+// 获取用户收藏歌单
+export async function getUserPlaylistCollect(
+  uid: number,
+  limit: number = 100,
+  offset: number = 0,
+): Promise<any> {
+  try {
+    const response = await axios({
+      method: 'get',
+      url: `${IP}/user/playlist/collect`,
+      params: {
+        uid,
+        limit,
+        offset,
+        cookie: cookieValue,
+      },
+    })
+    return response.data
+  } catch (error) {
+    console.error('获取用户收藏歌单失败:', error)
+    throw error
+  }
+}
+
+// 获取用户创建歌单
+export async function getUserPlaylistCreate(
+  uid: number,
+  limit: number = 100,
+  offset: number = 0,
+): Promise<any> {
+  try {
+    const response = await axios({
+      method: 'get',
+      url: `${IP}/user/playlist/create`,
+      params: {
+        uid,
+        limit,
+        offset,
+        cookie: cookieValue,
+      },
+    })
+    return response.data
+  } catch (error) {
+    console.error('获取用户创建歌单失败:', error)
+    throw error
   }
 }

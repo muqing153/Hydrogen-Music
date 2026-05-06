@@ -1,11 +1,5 @@
 <template>
     <v-col class="recommend-page">
-        <!-- 页面标题 -->
-        <v-card-title class="text-h5 font-weight-bold" style="flex-shrink: 0;">
-            <v-icon start color="primary">mdi-music-box-multiple</v-icon>
-            每日推荐
-        </v-card-title>
-        <v-divider class="mb-4" style="flex-shrink: 0;"></v-divider>
         <!-- 推荐歌单区域 -->
         <v-card v-if="items && items.length > 0" class="playlist-section mb-6" elevation="1">
             <v-card-title class="text-subtitle-1 py-3 d-flex align-center">
@@ -48,7 +42,91 @@
                 </v-slide-group>
             </v-card-text>
         </v-card>
-
+        <!-- 登陆后才显示区域 我的歌单 -->
+        <v-card v-if="api.isLoggedIn() && myPlaylists && myPlaylists.length > 0" class="my-playlist-section mb-6"
+            elevation="1">
+            <v-card-title class="text-subtitle-1 py-3 d-flex align-center">
+                <v-icon start color="primary">mdi-music-note</v-icon>
+                我的歌单
+            </v-card-title>
+            <v-card-text>
+                <!-- 横向滚动列表 -->
+                <v-slide-group class="py-2" hide-arrows>
+                    <v-col v-for="(playlist, index) in myPlaylists" :key="index" cols="auto">
+                        <v-card class="playlist-card" width="160" height="180" link
+                            @click="router.push({ path: '/MusicPlaylist', query: { id: playlist.id } })">
+                            <!-- 封面图片区域 -->
+                            <v-img :src="`${playlist.coverImgUrl || playlist.picUrl}?param=360y360`" height="180" cover>
+                                <template #placeholder>
+                                    <div class="d-flex align-center justify-center fill-height">
+                                        <v-progress-circular color="grey-lighten-4" indeterminate />
+                                    </div>
+                                </template>
+                                <!-- 播放量徽章 -->
+                                <div class="play-count-badge" v-if="playlist.playCount">
+                                    <v-icon size="x-small">mdi-play</v-icon>
+                                    {{ formatPlayCount(playlist.playCount) }}
+                                </div>
+                            </v-img>
+                            <!-- 内容区域 -->
+                            <div class="playlist-content">
+                                <!-- 标题 -->
+                                <div class="playlist-title">
+                                    {{ playlist.name }}
+                                </div>
+                                <!-- 播放按钮 -->
+                                <v-btn class="play-icon" size="32" variant="tonal"
+                                    :icon="player.PlaylistUID.value === String(playlist.id) ? (player.isPlaying.value ? 'mdi-pause' : 'mdi-play') : 'mdi-play'"
+                                    @click.stop="handlePlaylistClick(String(playlist.id))" text>
+                                </v-btn>
+                            </div>
+                        </v-card>
+                    </v-col>
+                </v-slide-group>
+            </v-card-text>
+        </v-card>
+        <!-- 登陆后才显示区域 收藏歌单 -->
+        <v-card v-if="api.isLoggedIn()" class="liked-playlist-section mb-6" elevation="1">
+            <v-card-title class="text-subtitle-1 py-3 d-flex align-center">
+                <v-icon start color="error">mdi-heart</v-icon>
+                收藏歌单
+            </v-card-title>
+            <v-card-text>
+                <!-- 横向滚动列表 -->
+                <v-slide-group class="py-2" hide-arrows>
+                    <v-col v-for="(playlist, index) in likedPlaylists" :key="index" cols="auto">
+                        <v-card class="playlist-card" width="160" height="180" link
+                            @click="router.push({ path: '/MusicPlaylist', query: { id: playlist.id } })">
+                            <!-- 封面图片区域 -->
+                            <v-img :src="`${playlist.coverImgUrl || playlist.picUrl}?param=360y360`" height="180" cover>
+                                <template #placeholder>
+                                    <div class="d-flex align-center justify-center fill-height">
+                                        <v-progress-circular color="grey-lighten-4" indeterminate />
+                                    </div>
+                                </template>
+                                <!-- 播放量徽章 -->
+                                <div class="play-count-badge" v-if="playlist.playCount">
+                                    <v-icon size="x-small">mdi-play</v-icon>
+                                    {{ formatPlayCount(playlist.playCount) }}
+                                </div>
+                            </v-img>
+                            <!-- 内容区域 -->
+                            <div class="playlist-content">
+                                <!-- 标题 -->
+                                <div class="playlist-title">
+                                    {{ playlist.name }}
+                                </div>
+                                <!-- 播放按钮 -->
+                                <v-btn class="play-icon" size="32" variant="tonal"
+                                    :icon="player.PlaylistUID.value === String(playlist.id) ? (player.isPlaying.value ? 'mdi-pause' : 'mdi-play') : 'mdi-play'"
+                                    @click.stop="handlePlaylistClick(String(playlist.id))" text>
+                                </v-btn>
+                            </div>
+                        </v-card>
+                    </v-col>
+                </v-slide-group>
+            </v-card-text>
+        </v-card>
         <!-- 推荐歌曲区域 -->
         <v-card v-if="MusicList && MusicList.length > 0" class="songs-section" elevation="1">
             <v-card-title class="text-subtitle-1 py-3 d-flex align-center justify-space-between">
@@ -128,6 +206,8 @@ defineOptions({
 
 const items: any = ref(null)
 const MusicList: any = ref(null)
+const myPlaylists: any = ref([])
+const likedPlaylists: any = ref([])
 
 // 加载推荐歌单
 async function loadRecommendPlaylists(forceRefresh: boolean = false) {
@@ -153,9 +233,69 @@ async function loadRecommendSongs(forceRefresh: boolean = false) {
     }
 }
 
+// 加载用户收藏歌单
+async function loadLikedPlaylist() {
+    if (!api.isLoggedIn()) {
+        return
+    }
+    try {
+        console.log('[RecommendView] 开始加载用户收藏歌单')
+        // 获取用户账号信息以得到 uid
+        const accountRes = await api.getUserAccount()
+        if (accountRes.success && accountRes.data) {
+            const uid = accountRes.data.account?.id || accountRes.data.profile?.userId
+            if (uid) {
+                // 使用收藏歌单 API
+                const collectRes = await api.getUserPlaylistCollect(uid, 50, 0)
+                // 数据结构可能是 { data: { playlist: [...] } } 或 { data: [...] }
+                const playlists = collectRes.data?.playlist || collectRes.data || []
+                if (playlists && playlists.length > 0) {
+                    likedPlaylists.value = playlists
+                    console.log('[RecommendView] 收藏歌单加载成功，数量:', likedPlaylists.value.length)
+                    return
+                }
+            }
+        }
+        console.log('[RecommendView] 收藏歌单加载失败，无法获取用户账号信息')
+    } catch (error) {
+        console.error('[RecommendView] 加载用户收藏歌单失败:', error)
+    }
+}
+
+// 加载用户创建歌单
+async function loadMyPlaylist() {
+    if (!api.isLoggedIn()) {
+        return
+    }
+    try {
+        console.log('[RecommendView] 开始加载用户创建歌单')
+        // 获取用户账号信息以得到 uid
+        const accountRes = await api.getUserAccount()
+        if (accountRes.success && accountRes.data) {
+            const uid = accountRes.data.account?.id || accountRes.data.profile?.userId
+            if (uid) {
+                // 使用创建歌单 API
+                const createRes = await api.getUserPlaylistCreate(uid, 50, 0)
+                // 数据结构可能是 { data: { playlist: [...] } } 或 { data: [...] }
+                const playlists = createRes.data?.playlist || createRes.data || []
+                if (playlists && playlists.length > 0) {
+                    myPlaylists.value = playlists
+                    console.log('[RecommendView] 创建歌单加载成功，数量:', myPlaylists.value.length)
+                    return
+                }
+            }
+        }
+        console.log('[RecommendView] 创建歌单加载失败，无法获取用户账号信息')
+    } catch (error) {
+        console.error('[RecommendView] 加载用户创建歌单失败:', error)
+    }
+}
+
 // 初始加载
 loadRecommendPlaylists()
 loadRecommendSongs()
+loadMyPlaylist()
+loadLikedPlaylist()
 
 // 暴露刷新方法供父组件调用
 defineExpose({
@@ -168,6 +308,8 @@ defineExpose({
         // 强制刷新
         loadRecommendPlaylists(true)
         loadRecommendSongs(true)
+        loadMyPlaylist()
+        loadLikedPlaylist()
     }
 })
 
@@ -271,8 +413,6 @@ function handlePlaylistClick(id: string) {
     right: 3px;
     top: -16px;
 }
-
-
 
 /* 推荐歌曲区域 */
 .songs-section {
