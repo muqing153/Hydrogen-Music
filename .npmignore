@@ -1,0 +1,30 @@
+# Node modules
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# API enhanced folder (backend service)
+api-enhanced/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env.local
+.env.*.local
+
+# TypeScript build info
+*.tsbuildinfo
+# Test coverage
+coverage/
