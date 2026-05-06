@@ -1,7 +1,7 @@
 import axios from 'axios'
 // 开发环境使用代理，生产环境使用完整 URL
 const isDev = import.meta.env.DEV
-export const IP = isDev ? '/api' : 'http://192.168.124.4:3000'
+export const IP = isDev ? ' http://localhost:3000' : 'https://api.muqingcandy.cn'
 
 // Cookie 管理
 let cookieValue = ''
@@ -408,7 +408,6 @@ export async function getPlaylistAllTracks(id: string): Promise<any[]> {
     throw error
   }
 }
-
 
 // 获取歌单详情
 export async function getPlaylistDetail(id: string): Promise<any> {

@@ -32,7 +32,14 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
+    port: 2026,
     open: true,
+    allowedHosts: [
+      'muqingcandy.cn',
+      // 如果你还想通过 localhost 访问，也可以加上
+      'localhost',
+      '127.0.0.1',
+    ],
     proxy: {
       '/api': {
         target: 'http://192.168.124.4:3000',
