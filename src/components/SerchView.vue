@@ -65,56 +65,430 @@
                 </div>
             </v-card-text>
         </v-card>
+        <!-- 搜索内容选择 -->
+        <v-card v-if="searched" class="search-content mb-6" elevation="1">
+            <v-card-title class="text-subtitle-1 py-3">
+                <v-icon start>mdi-music-note</v-icon>
+                搜索内容
+            </v-card-title>
+            <v-divider></v-divider>
+            <v-card-text>
+                <div class="search-type-tabs">
+                    <v-chip v-for="type in searchTypes" :key="type.value"
+                        :color="currentSearchType === type.value ? 'primary' : undefined"
+                        :variant="currentSearchType === type.value ? 'tonal' : 'outlined'" clickable size="small"
+                        class="ma-1" @click="changeSearchType(type.value)">
+                        <v-icon start size="x-small">{{ type.icon }}</v-icon>
+                        {{ type.label }}
+                    </v-chip>
+                </div>
+            </v-card-text>
+        </v-card>
 
         <!-- 搜索结果 -->
         <v-card v-if="searchResults.length > 0" class="results-container" elevation="1">
             <v-card-title class="d-flex align-center justify-space-between py-3" style="flex-shrink: 0;">
                 <span class="text-subtitle-1">
-                    <v-icon start>mdi-music-note</v-icon>
-                    搜索结果
+                    <v-icon start>{{ currentSearchTypeIcon }}</v-icon>
+                    {{ currentSearchTypeName }}结果
                 </span>
                 <v-chip size="small" variant="tonal">
-                    {{ total }} 首
+                    {{ total }} {{ currentSearchTypeUnit }}
                 </v-chip>
             </v-card-title>
             <v-divider style="flex-shrink: 0;"></v-divider>
 
 
             <v-infinite-scroll :items="searchResults" @load="loadMore">
-                <v-list-item v-for="(item, index) in searchResults" :key="index" class="result-item"
-                    @click="playTrack(item)">
-                    <template v-slot:prepend>
-                        <v-avatar size="56" rounded="lg">
-                            <v-img :src="item.al?.picUrl || item.album?.picUrl" cover>
-                                <template v-slot:placeholder>
-                                    <div class="d-flex align-center justify-center fill-height">
-                                        <v-icon color="grey-lighten-2" size="large">mdi-music-note</v-icon>
-                                    </div>
-                                </template>
-                            </v-img>
-                        </v-avatar>
-                    </template>
+                <!-- 单曲结果 -->
+                <template v-if="currentSearchType === 1">
+                    <v-list-item v-for="(item, index) in searchResults" :key="index" class="result-item"
+                        @click="playTrack(item)">
+                        <template v-slot:prepend>
+                            <v-avatar size="56" rounded="lg">
+                                <v-img :src="item.al?.picUrl || item.album?.picUrl" cover>
+                                    <template v-slot:placeholder>
+                                        <div class="d-flex align-center justify-center fill-height">
+                                            <v-icon color="grey-lighten-2" size="large">mdi-music-note</v-icon>
+                                        </div>
+                                    </template>
+                                </v-img>
+                            </v-avatar>
+                        </template>
 
-                    <v-list-item-title class="font-weight-medium text-body-1">
-                        {{ item.name }}
-                    </v-list-item-title>
+                        <v-list-item-title class="font-weight-medium text-body-1">
+                            {{ item.name }}
+                        </v-list-item-title>
 
-                    <v-list-item-subtitle class="mt-1">
-                        <span class="text-truncate">
-                            <v-icon size="x-small" class="mr-1">mdi-account-music</v-icon>
-                            {{item.ar?.map((a: any) => a.name).join(' / ') || item.artists?.map((a: any) =>
-                                a.name).join(' / ')}}
-                        </span>
-                        <br v-if="item.al?.name || item.album?.name" />
-                        <v-chip v-if="item.al?.name || item.album?.name" size="x-small" class="mt-1" variant="tonal">
-                            <v-icon start size="x-small">mdi-album</v-icon>
-                            {{ item.al?.name || item.album?.name }}
-                        </v-chip>
-                    </v-list-item-subtitle>
-                    <template v-slot:append>
-                        <v-btn icon="mdi-play-circle" size="large" variant="text" @click.stop="playTrack(item)" />
-                    </template>
-                </v-list-item>
+                        <v-list-item-subtitle class="mt-1">
+                            <span class="text-truncate">
+                                <v-icon size="x-small" class="mr-1">mdi-account-music</v-icon>
+                                {{item.ar?.map((a: any) => a.name).join(' / ') || item.artists?.map((a: any) =>
+                                    a.name).join(' / ')}}
+                            </span>
+                            <br v-if="item.al?.name || item.album?.name" />
+                            <v-chip v-if="item.al?.name || item.album?.name" size="x-small" class="mt-1"
+                                variant="tonal">
+                                <v-icon start size="x-small">mdi-album</v-icon>
+                                {{ item.al?.name || item.album?.name }}
+                            </v-chip>
+                        </v-list-item-subtitle>
+                        <template v-slot:append>
+                            <v-btn icon="mdi-play-circle" size="large" variant="text" @click.stop="playTrack(item)" />
+                        </template>
+                    </v-list-item>
+                </template>
+
+                <!-- 歌单结果 -->
+                <template v-else-if="currentSearchType === 1000">
+                    <v-list-item v-for="(item, index) in searchResults" :key="index" class="result-item"
+                        @click="openPlaylist(item.id)">
+                        <template v-slot:prepend>
+                            <v-avatar size="56" rounded="lg">
+                                <v-img :src="item.coverImgUrl" cover>
+                                    <template v-slot:placeholder>
+                                        <div class="d-flex align-center justify-center fill-height">
+                                            <v-icon color="grey-lighten-2" size="large">mdi-playlist-music</v-icon>
+                                        </div>
+                                    </template>
+                                </v-img>
+                            </v-avatar>
+                        </template>
+
+                        <v-list-item-title class="font-weight-medium text-body-1">
+                            {{ item.name }}
+                        </v-list-item-title>
+
+                        <v-list-item-subtitle class="mt-1">
+                            <span class="text-truncate">
+                                <v-icon size="x-small" class="mr-1">mdi-account</v-icon>
+                                {{ item.creator?.nickname }}
+                            </span>
+                            <br />
+                            <v-chip size="x-small" class="mt-1" variant="tonal">
+                                <v-icon start size="x-small">mdi-music-note</v-icon>
+                                {{ item.trackCount }} 首
+                            </v-chip>
+                            <v-chip size="x-small" class="mt-1 ml-2" variant="tonal">
+                                <v-icon start size="x-small">mdi-play-circle</v-icon>
+                                {{ formatPlayCount(item.playCount) }}
+                            </v-chip>
+                        </v-list-item-subtitle>
+                        <template v-slot:append>
+                            <v-btn icon="mdi-chevron-right" size="large" variant="text" />
+                        </template>
+                    </v-list-item>
+                </template>
+
+                <!-- 专辑结果 -->
+                <template v-else-if="currentSearchType === 10">
+                    <v-list-item v-for="(item, index) in searchResults" :key="index" class="result-item"
+                        @click="openAlbum(item.id)">
+                        <template v-slot:prepend>
+                            <v-avatar size="56" rounded="lg">
+                                <v-img :src="item.picUrl || item.blurPicUrl" cover>
+                                    <template v-slot:placeholder>
+                                        <div class="d-flex align-center justify-center fill-height">
+                                            <v-icon color="grey-lighten-2" size="large">mdi-album</v-icon>
+                                        </div>
+                                    </template>
+                                </v-img>
+                            </v-avatar>
+                        </template>
+
+                        <v-list-item-title class="font-weight-medium text-body-1">
+                            {{ item.name }}
+                        </v-list-item-title>
+
+                        <v-list-item-subtitle class="mt-1">
+                            <span class="text-truncate">
+                                <v-icon size="x-small" class="mr-1">mdi-account-music</v-icon>
+                                {{ item.artist?.name || item.artists?.[0]?.name }}
+                            </span>
+                            <br />
+                            <v-chip size="x-small" class="mt-1" variant="tonal">
+                                <v-icon start size="x-small">mdi-music-note</v-icon>
+                                {{ item.size }} 首
+                            </v-chip>
+                            <v-chip size="x-small" class="mt-1 ml-2" variant="tonal">
+                                <v-icon start size="x-small">mdi-calendar</v-icon>
+                                {{ formatDate(item.publishTime) }}
+                            </v-chip>
+                        </v-list-item-subtitle>
+                        <template v-slot:append>
+                            <v-btn icon="mdi-chevron-right" size="large" variant="text" />
+                        </template>
+                    </v-list-item>
+                </template>
+
+                <!-- 歌手结果 -->
+                <template v-else-if="currentSearchType === 100">
+                    <v-list-item v-for="(item, index) in searchResults" :key="index" class="result-item"
+                        @click="openArtist(item.id)">
+                        <template v-slot:prepend>
+                            <v-avatar size="56" rounded="lg">
+                                <v-img :src="item.picUrl || item.img1v1Url" cover>
+                                    <template v-slot:placeholder>
+                                        <div class="d-flex align-center justify-center fill-height">
+                                            <v-icon color="grey-lighten-2" size="large">mdi-account-music</v-icon>
+                                        </div>
+                                    </template>
+                                </v-img>
+                            </v-avatar>
+                        </template>
+
+                        <v-list-item-title class="font-weight-medium text-body-1">
+                            {{ item.name }}
+                        </v-list-item-title>
+
+                        <v-list-item-subtitle class="mt-1">
+                            <v-chip size="x-small" class="mt-1" variant="tonal">
+                                <v-icon start size="x-small">mdi-album</v-icon>
+                                {{ item.albumSize }} 张专辑
+                            </v-chip>
+                            <v-chip size="x-small" class="mt-1 ml-2" variant="tonal">
+                                <v-icon start size="x-small">mdi-music-note</v-icon>
+                                {{ item.musicSize }} 首歌曲
+                            </v-chip>
+                        </v-list-item-subtitle>
+                        <template v-slot:append>
+                            <v-btn icon="mdi-chevron-right" size="large" variant="text" />
+                        </template>
+                    </v-list-item>
+                </template>
+
+                <!-- MV结果 -->
+                <template v-else-if="currentSearchType === 1004">
+                    <v-list-item v-for="(item, index) in searchResults" :key="index" class="result-item"
+                        @click="openMV(item.id)">
+                        <template v-slot:prepend>
+                            <v-avatar size="56" rounded="lg">
+                                <v-img :src="item.cover" cover>
+                                    <template v-slot:placeholder>
+                                        <div class="d-flex align-center justify-center fill-height">
+                                            <v-icon color="grey-lighten-2" size="large">mdi-video</v-icon>
+                                        </div>
+                                    </template>
+                                </v-img>
+                            </v-avatar>
+                        </template>
+
+                        <v-list-item-title class="font-weight-medium text-body-1">
+                            {{ item.name }}
+                        </v-list-item-title>
+
+                        <v-list-item-subtitle class="mt-1">
+                            <span class="text-truncate">
+                                <v-icon size="x-small" class="mr-1">mdi-account-music</v-icon>
+                                {{ item.artistName || item.artists?.[0]?.name }}
+                            </span>
+                            <br />
+                            <v-chip size="x-small" class="mt-1" variant="tonal">
+                                <v-icon start size="x-small">mdi-play-circle</v-icon>
+                                {{ formatPlayCount(item.playCount) }}
+                            </v-chip>
+                            <v-chip size="x-small" class="mt-1 ml-2" variant="tonal">
+                                <v-icon start size="x-small">mdi-clock-outline</v-icon>
+                                {{ formatDuration(item.duration) }}
+                            </v-chip>
+                        </v-list-item-subtitle>
+                        <template v-slot:append>
+                            <v-btn icon="mdi-play-circle" size="large" variant="text" />
+                        </template>
+                    </v-list-item>
+                </template>
+
+                <!-- 电台结果 -->
+                <template v-else-if="currentSearchType === 1009">
+                    <v-list-item v-for="(item, index) in searchResults" :key="index" class="result-item"
+                        @click="openRadio(item.id)">
+                        <template v-slot:prepend>
+                            <v-avatar size="56" rounded="lg">
+                                <v-img :src="item.picUrl" cover>
+                                    <template v-slot:placeholder>
+                                        <div class="d-flex align-center justify-center fill-height">
+                                            <v-icon color="grey-lighten-2" size="large">mdi-radio</v-icon>
+                                        </div>
+                                    </template>
+                                </v-img>
+                            </v-avatar>
+                        </template>
+
+                        <v-list-item-title class="font-weight-medium text-body-1">
+                            {{ item.name }}
+                        </v-list-item-title>
+
+                        <v-list-item-subtitle class="mt-1">
+                            <span class="text-truncate">
+                                <v-icon size="x-small" class="mr-1">mdi-account</v-icon>
+                                {{ item.dj?.nickname }}
+                            </span>
+                            <br />
+                            <v-chip size="x-small" class="mt-1" variant="tonal">
+                                <v-icon start size="x-small">mdi-music-note</v-icon>
+                                {{ item.programCount }} 期
+                            </v-chip>
+                            <v-chip size="x-small" class="mt-1 ml-2" variant="tonal">
+                                <v-icon start size="x-small">mdi-account-group</v-icon>
+                                {{ item.subCount }} 订阅
+                            </v-chip>
+                        </v-list-item-subtitle>
+                        <template v-slot:append>
+                            <v-btn icon="mdi-chevron-right" size="large" variant="text" />
+                        </template>
+                    </v-list-item>
+                </template>
+
+                <!-- 视频结果 -->
+                <template v-else-if="currentSearchType === 1014">
+                    <v-list-item v-for="(item, index) in searchResults" :key="index" class="result-item"
+                        @click="openVideo(item.vid)">
+                        <template v-slot:prepend>
+                            <v-avatar size="56" rounded="lg">
+                                <v-img :src="item.coverUrl" cover>
+                                    <template v-slot:placeholder>
+                                        <div class="d-flex align-center justify-center fill-height">
+                                            <v-icon color="grey-lighten-2" size="large">mdi-play-circle</v-icon>
+                                        </div>
+                                    </template>
+                                </v-img>
+                            </v-avatar>
+                        </template>
+
+                        <v-list-item-title class="font-weight-medium text-body-1">
+                            {{ item.title }}
+                        </v-list-item-title>
+
+                        <v-list-item-subtitle class="mt-1">
+                            <span class="text-truncate">
+                                <v-icon size="x-small" class="mr-1">mdi-account</v-icon>
+                                {{ item.creator?.[0]?.userName }}
+                            </span>
+                            <br />
+                            <v-chip size="x-small" class="mt-1" variant="tonal">
+                                <v-icon start size="x-small">mdi-play-circle</v-icon>
+                                {{ item.playTime }} 次播放
+                            </v-chip>
+                            <v-chip size="x-small" class="mt-1 ml-2" variant="tonal">
+                                <v-icon start size="x-small">mdi-clock-outline</v-icon>
+                                {{ formatDuration(item.durationms) }}
+                            </v-chip>
+                        </v-list-item-subtitle>
+                        <template v-slot:append>
+                            <v-btn icon="mdi-play-circle" size="large" variant="text" />
+                        </template>
+                    </v-list-item>
+                </template>
+
+                <!-- 用户结果 -->
+                <template v-else-if="currentSearchType === 1002">
+                    <v-list-item v-for="(item, index) in searchResults" :key="index" class="result-item"
+                        @click="openUser(item.userId)">
+                        <template v-slot:prepend>
+                            <v-avatar size="56" rounded="lg">
+                                <v-img :src="item.avatarUrl" cover>
+                                    <template v-slot:placeholder>
+                                        <div class="d-flex align-center justify-center fill-height">
+                                            <v-icon color="grey-lighten-2" size="large">mdi-account</v-icon>
+                                        </div>
+                                    </template>
+                                </v-img>
+                            </v-avatar>
+                        </template>
+
+                        <v-list-item-title class="font-weight-medium text-body-1">
+                            {{ item.nickname }}
+                        </v-list-item-title>
+
+                        <v-list-item-subtitle class="mt-1">
+                            <span v-if="item.signature" class="text-truncate">
+                                {{ item.signature }}
+                            </span>
+                            <br v-if="item.signature" />
+                            <v-chip size="x-small" class="mt-1" variant="tonal">
+                                <v-icon start size="x-small">mdi-account-group</v-icon>
+                                {{ item.follows }} 关注
+                            </v-chip>
+                            <v-chip size="x-small" class="mt-1 ml-2" variant="tonal">
+                                <v-icon start size="x-small">mdi-account-multiple</v-icon>
+                                {{ item.followeds }} 粉丝
+                            </v-chip>
+                        </v-list-item-subtitle>
+                        <template v-slot:append>
+                            <v-btn icon="mdi-chevron-right" size="large" variant="text" />
+                        </template>
+                    </v-list-item>
+                </template>
+
+                <!-- 歌词结果（使用单曲展示） -->
+                <template v-else-if="currentSearchType === 1006">
+                    <v-list-item v-for="(item, index) in searchResults" :key="index" class="result-item"
+                        @click="playTrack(item)">
+                        <template v-slot:prepend>
+                            <v-avatar size="56" rounded="lg">
+                                <v-img :src="item.al?.picUrl || item.album?.picUrl" cover>
+                                    <template v-slot:placeholder>
+                                        <div class="d-flex align-center justify-center fill-height">
+                                            <v-icon color="grey-lighten-2" size="large">mdi-text</v-icon>
+                                        </div>
+                                    </template>
+                                </v-img>
+                            </v-avatar>
+                        </template>
+
+                        <v-list-item-title class="font-weight-medium text-body-1">
+                            {{ item.name }}
+                        </v-list-item-title>
+
+                        <v-list-item-subtitle class="mt-1">
+                            <span class="text-truncate">
+                                <v-icon size="x-small" class="mr-1">mdi-account-music</v-icon>
+                                {{item.ar?.map((a: any) => a.name).join(' / ') || item.artists?.map((a: any) =>
+                                    a.name).join(' / ')}}
+                            </span>
+                            <br v-if="item.al?.name || item.album?.name" />
+                            <v-chip v-if="item.al?.name || item.album?.name" size="x-small" class="mt-1"
+                                variant="tonal">
+                                <v-icon start size="x-small">mdi-album</v-icon>
+                                {{ item.al?.name || item.album?.name }}
+                            </v-chip>
+                        </v-list-item-subtitle>
+                        <template v-slot:append>
+                            <v-btn icon="mdi-play-circle" size="large" variant="text" @click.stop="playTrack(item)" />
+                        </template>
+                    </v-list-item>
+                </template>
+
+                <!-- 其他类型的默认展示 -->
+                <template v-else>
+                    <v-list-item v-for="(item, index) in searchResults" :key="index" class="result-item">
+                        <template v-slot:prepend>
+                            <v-avatar size="56" rounded="lg">
+                                <v-img :src="item.picUrl || item.coverImgUrl || item.avatarUrl || item.cover" cover>
+                                    <template v-slot:placeholder>
+                                        <div class="d-flex align-center justify-center fill-height">
+                                            <v-icon color="grey-lighten-2" size="large">{{ currentSearchTypeIcon
+                                            }}</v-icon>
+                                        </div>
+                                    </template>
+                                </v-img>
+                            </v-avatar>
+                        </template>
+
+                        <v-list-item-title class="font-weight-medium text-body-1">
+                            {{ item.name || item.nickname || item.title }}
+                        </v-list-item-title>
+
+                        <v-list-item-subtitle class="mt-1">
+                            <span v-if="item.description || item.signature" class="text-truncate">
+                                {{ item.description || item.signature }}
+                            </span>
+                        </v-list-item-subtitle>
+                        <template v-slot:append>
+                            <v-btn icon="mdi-chevron-right" size="large" variant="text" />
+                        </template>
+                    </v-list-item>
+                </template>
                 <!-- 加载中提示 -->
                 <template v-slot:loading>
                     <div class="text-center py-4">
@@ -163,9 +537,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import * as api from '../api'
 import { player } from '@/staic'
+import router from '@/router'
 
 const searchQuery = ref('')
 const searchResults = ref<any[]>([])
@@ -174,6 +549,48 @@ const searched = ref(false)
 const offset = ref(0)
 const hasMore = ref(true)
 const total = ref(0)
+
+// 搜索类型
+const currentSearchType = ref(1) // 默认为单曲
+const searchTypes = [
+    { label: '单曲', value: 1, icon: 'mdi-music-note' },
+    { label: '专辑', value: 10, icon: 'mdi-album' },
+    { label: '歌手', value: 100, icon: 'mdi-account-music' },
+    { label: '歌单', value: 1000, icon: 'mdi-playlist-music' },
+    { label: '用户', value: 1002, icon: 'mdi-account' },
+    { label: 'MV', value: 1004, icon: 'mdi-video' },
+    { label: '歌词', value: 1006, icon: 'mdi-text' },
+    { label: '电台', value: 1009, icon: 'mdi-radio' },
+    { label: '视频', value: 1014, icon: 'mdi-play-circle' }
+]
+
+// 当前搜索类型的图标
+const currentSearchTypeIcon = computed(() => {
+    const type = searchTypes.find(t => t.value === currentSearchType.value)
+    return type?.icon || 'mdi-music-note'
+})
+
+// 当前搜索类型的名称
+const currentSearchTypeName = computed(() => {
+    const type = searchTypes.find(t => t.value === currentSearchType.value)
+    return type?.label || '单曲'
+})
+
+// 当前搜索类型的单位
+const currentSearchTypeUnit = computed(() => {
+    switch (currentSearchType.value) {
+        case 1: return '首'
+        case 10: return '张'
+        case 100: return '位'
+        case 1000: return '个'
+        case 1002: return '个'
+        case 1004: return '个'
+        case 1006: return '条'
+        case 1009: return '个'
+        case 1014: return '个'
+        default: return '条'
+    }
+})
 
 // 搜索建议
 const suggestions = ref<any[]>([])
@@ -211,17 +628,57 @@ async function handleSearch() {
     searchResults.value = []
 
     try {
-        const res = await api.searchCloud(searchQuery.value.trim(), 30, offset.value)
+        const res = await api.searchCloud(searchQuery.value.trim(), 30, offset.value, currentSearchType.value)
 
-        if (res.result && res.result.songs) {
-            searchResults.value = res.result.songs
-            total.value = res.result.songCount || 0
-            hasMore.value = res.result.songCount > searchResults.value.length
-        } else {
-            searchResults.value = []
-            total.value = 0
-            hasMore.value = false
+        // 根据搜索类型获取对应的结果数据
+        let results: any[] = []
+        let count = 0
+
+        switch (currentSearchType.value) {
+            case 1: // 单曲
+                results = res.result?.songs || []
+                count = res.result?.songCount || 0
+                break
+            case 10: // 专辑
+                results = res.result?.albums || []
+                count = res.result?.albumCount || 0
+                break
+            case 100: // 歌手
+                results = res.result?.artists || []
+                count = res.result?.artistCount || 0
+                break
+            case 1000: // 歌单
+                results = res.result?.playlists || []
+                count = res.result?.playlistCount || 0
+                break
+            case 1002: // 用户
+                results = res.result?.userprofiles || []
+                count = res.result?.userprofileCount || 0
+                break
+            case 1004: // MV
+                results = res.result?.mvs || []
+                count = res.result?.mvCount || 0
+                break
+            case 1006: // 歌词
+                results = res.result?.songs || []
+                count = res.result?.songCount || 0
+                break
+            case 1009: // 电台
+                results = res.result?.djRadios || []
+                count = res.result?.djRadiosCount || 0
+                break
+            case 1014: // 视频
+                results = res.result?.videos || []
+                count = res.result?.videoCount || 0
+                break
+            default:
+                results = res.result?.songs || []
+                count = res.result?.songCount || 0
         }
+
+        searchResults.value = results
+        total.value = count
+        hasMore.value = count > searchResults.value.length
 
         // 保存搜索历史
         saveToHistory(searchQuery.value.trim())
@@ -234,6 +691,21 @@ async function handleSearch() {
     }
 }
 
+// 切换搜索类型
+async function changeSearchType(type: number) {
+    if (currentSearchType.value === type) return
+
+    currentSearchType.value = type
+    offset.value = 0
+    searchResults.value = []
+    hasMore.value = true
+
+    // 重新搜索
+    if (searchQuery.value.trim()) {
+        await handleSearch()
+    }
+}
+
 async function loadMore({ done }: { done: (status: 'ok' | 'error' | 'empty') => void }) {
     if (!searchQuery.value.trim() || !hasMore.value || loading.value) {
         done('empty');
@@ -243,17 +715,58 @@ async function loadMore({ done }: { done: (status: 'ok' | 'error' | 'empty') => 
     loading.value = true;
 
     try {
-        const res = await api.searchCloud(searchQuery.value.trim(), 30, offset.value);
+        const res = await api.searchCloud(searchQuery.value.trim(), 30, offset.value, currentSearchType.value);
 
-        if (res.result && res.result.songs) {
-            searchResults.value.push(...res.result.songs);
-            offset.value += 30;
-            hasMore.value = res.result.songCount > searchResults.value.length;
-            done('ok');  // 加载成功
-        } else {
-            hasMore.value = false;
-            done('empty');  // 没有更多数据
+        // 根据搜索类型获取对应的结果数据
+        let results: any[] = []
+        let count = 0
+
+        switch (currentSearchType.value) {
+            case 1: // 单曲
+                results = res.result?.songs || []
+                count = res.result?.songCount || 0
+                break
+            case 10: // 专辑
+                results = res.result?.albums || []
+                count = res.result?.albumCount || 0
+                break
+            case 100: // 歌手
+                results = res.result?.artists || []
+                count = res.result?.artistCount || 0
+                break
+            case 1000: // 歌单
+                results = res.result?.playlists || []
+                count = res.result?.playlistCount || 0
+                break
+            case 1002: // 用户
+                results = res.result?.userprofiles || []
+                count = res.result?.userprofileCount || 0
+                break
+            case 1004: // MV
+                results = res.result?.mvs || []
+                count = res.result?.mvCount || 0
+                break
+            case 1006: // 歌词
+                results = res.result?.songs || []
+                count = res.result?.songCount || 0
+                break
+            case 1009: // 电台
+                results = res.result?.djRadios || []
+                count = res.result?.djRadiosCount || 0
+                break
+            case 1014: // 视频
+                results = res.result?.videos || []
+                count = res.result?.videoCount || 0
+                break
+            default:
+                results = res.result?.songs || []
+                count = res.result?.songCount || 0
         }
+
+        searchResults.value.push(...results);
+        offset.value += 30;
+        hasMore.value = count > searchResults.value.length;
+        done('ok');  // 加载成功
     } catch (error) {
         console.error('加载更多失败:', error);
         done('error');  // 加载失败
@@ -269,6 +782,7 @@ function clearSearch() {
     offset.value = 0
     hasMore.value = true
     total.value = 0
+    currentSearchType.value = 1 // 重置为单曲
     closeSuggestions()
 }
 
@@ -392,6 +906,78 @@ async function playTrack(item: any) {
         console.error('播放失败:', error)
     }
 }
+
+// 打开歌单
+function openPlaylist(playlistId: number) {
+    // TODO: 跳转到歌单详情页
+    console.log('打开歌单:', playlistId)
+    router.push({ path: '/MusicPlaylist', query: { id: playlistId } })
+}
+
+// 格式化播放次数
+function formatPlayCount(count: number): string {
+    if (count >= 100000000) {
+        return (count / 100000000).toFixed(1) + '亿'
+    } else if (count >= 10000) {
+        return (count / 10000).toFixed(1) + '万'
+    }
+    return count.toString()
+}
+
+// 格式化日期
+function formatDate(timestamp: number): string {
+    if (!timestamp) return ''
+    const date = new Date(timestamp)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
+
+// 格式化时长（毫秒转分秒）
+function formatDuration(ms: number): string {
+    if (!ms) return '00:00'
+    const totalSeconds = Math.floor(ms / 1000)
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
+// 打开专辑
+function openAlbum(albumId: number) {
+    console.log('打开专辑:', albumId)
+    // TODO: 跳转到专辑详情页
+}
+
+// 打开歌手页
+function openArtist(artistId: number) {
+    console.log('打开歌手:', artistId)
+    // TODO: 跳转到歌手详情页
+}
+
+// 打开MV
+function openMV(mvId: number) {
+    console.log('打开MV:', mvId)
+    // TODO: 跳转到MV播放页
+}
+
+// 打开电台
+function openRadio(radioId: number) {
+    console.log('打开电台:', radioId)
+    // TODO: 跳转到电台详情页
+}
+
+// 打开视频
+function openVideo(videoId: string) {
+    console.log('打开视频:', videoId)
+    // TODO: 跳转到视频播放页
+}
+
+// 打开用户主页
+function openUser(userId: number) {
+    console.log('打开用户:', userId)
+    // TODO: 跳转到用户主页
+}
 </script>
 
 <style scoped>
@@ -454,6 +1040,12 @@ async function playTrack(item: any) {
 }
 
 .hot-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.search-type-tabs {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
