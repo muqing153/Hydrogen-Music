@@ -1,12 +1,5 @@
 <template>
     <div class="search-page">
-        <!-- 页面标题 -->
-        <v-card-title class="text-h5 font-weight-bold" style="flex-shrink: 0;">
-            <v-icon start>mdi-magnify</v-icon>
-            搜索
-        </v-card-title>
-        <v-divider class="mb-4" style="flex-shrink: 0;"></v-divider>
-
         <!-- 搜索栏 -->
         <v-card class="search-header mb-6" elevation="2" style="flex-shrink: 0;">
             <v-text-field v-model="searchQuery" prepend-inner-icon="mdi-magnify" label="搜索歌曲、歌手、专辑" variant="outlined"

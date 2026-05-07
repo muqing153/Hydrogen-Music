@@ -434,7 +434,6 @@ function getPlayModeIcon(): string {
 .song-name {
     font-size: 20px;
     font-weight: 600;
-    color: white;
     margin: 0;
 }
 
@@ -557,14 +556,12 @@ function getPlayModeIcon(): string {
 }
 
 .mobile-info {
-    text-align: center;
     width: 100%;
 }
 
 .mobile-info .song-name {
     font-size: 20px;
     font-weight: 600;
-    color: white;
     margin: 0;
 }
 
