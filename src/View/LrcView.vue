@@ -110,13 +110,18 @@ watch(
 
         const lrcText = lyric.lrc?.lyric
         const tText = lyric.tlyric?.lyric
+        const romaText = lyric.romalrc?.lyric
+        const yrcText = lyric.yrc?.lyric
+        const ytText = lyric.ytlrc?.lyric
+        const yrText = lyric.yromalrc?.lyric
 
         if (!lrcText) {
             lrclsit.value = []
             return
         }
 
-        lrclsit.value = parseNeteaseLyric(lrcText, tText)
+        // 使用新版解析函数，支持所有歌词类型
+        lrclsit.value = parseNeteaseLyric(lrcText, tText, romaText, yrcText, ytText, yrText)
     },
     { immediate: true, deep: true }
 )
