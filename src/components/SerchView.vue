@@ -468,7 +468,7 @@
                                     <template v-slot:placeholder>
                                         <div class="d-flex align-center justify-center fill-height">
                                             <v-icon color="grey-lighten-2" size="large">{{ currentSearchTypeIcon
-                                            }}</v-icon>
+                                                }}</v-icon>
                                         </div>
                                     </template>
                                 </v-img>

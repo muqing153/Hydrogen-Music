@@ -6,6 +6,9 @@ export const IP = isDev ? ' http://localhost:3000' : 'https://api.muqingcandy.cn
 // Cookie 管理
 let cookieValue = ''
 
+// 缓存时间键名
+const CACHE_TIME_KEY = 'cache_timestamp'
+
 // 初始化时从 localStorage 恢复 cookie
 function initCookie() {
   const savedCookie = localStorage.getItem('music_cookie')
@@ -32,11 +35,6 @@ export function setCookie(cookie: string): void {
     localStorage.removeItem('music_cookie')
     console.log('[Cookie] cookie 已清除')
   }
-}
-
-// 延迟函数
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 // 二维码登录接口类型定义
@@ -356,9 +354,30 @@ export async function recommendResource(forceRefresh: boolean = false): Promise<
 }
 
 // 获取歌单
+// 获取歌单歌曲列表（带缓存）
 export async function getPlaylist(uid: string, offset: number = 0): Promise<any> {
+  const cacheKey = `playlist_${uid}_offset_${offset}`
+
   // 首次加载 30 首，后续每次加载 10 首
   const limit = offset === 1 ? 30 : 10
+
+  // 尝试从缓存读取
+  const cachedData = localStorage.getItem(cacheKey)
+  const cacheTime = localStorage.getItem(cacheKey + '_time')
+
+  if (cachedData && cacheTime) {
+    const now = Date.now()
+    const cacheAge = now - parseInt(cacheTime, 10)
+    const oneHour = 60 * 60 * 1000 // 1小时的毫秒数
+
+    if (cacheAge < oneHour) {
+      console.log(`[API] 从缓存获取歌单 ${uid} (offset: ${offset})`)
+      return Promise.resolve(JSON.parse(cachedData))
+    } else {
+      console.log(`[API] 歌单 ${uid} 缓存已过期`)
+      localStorage.removeItem(cacheKey)
+    }
+  }
 
   let data = (
     await axios({
@@ -366,17 +385,53 @@ export async function getPlaylist(uid: string, offset: number = 0): Promise<any>
       url: `${IP}/playlist/track/all?id=${uid}&limit=${limit}&offset=${offset}${cookieValue ? '&cookie=' + cookieValue : ''}`,
     })
   ).data
+
+  // 缓存数据
+  if (cookieValue) {
+    localStorage.setItem(cacheKey, JSON.stringify(data))
+    localStorage.setItem(cacheKey + '_time', Date.now().toString())
+    console.log(`[API] 歌单 ${uid} 已缓存`)
+  }
+
   return Promise.resolve(data)
 }
-// 获取歌单所有歌曲
+// 获取歌单所有歌曲（带缓存）
 export async function getPlaylistAllTracks(id: string): Promise<any[]> {
+  const cacheKey = `playlist_all_${id}`
+
   try {
+    // 尝试从缓存读取
+    const cachedData = localStorage.getItem(cacheKey)
+    const cacheTime = localStorage.getItem(cacheKey + '_time')
+
+    if (cachedData && cacheTime) {
+      const now = Date.now()
+      const cacheAge = now - parseInt(cacheTime, 10)
+      const oneHour = 60 * 60 * 1000 // 1小时的毫秒数
+
+      if (cacheAge < oneHour) {
+        console.log(`[API] 从缓存获取歌单 ${id} 全部歌曲`)
+        return Promise.resolve(JSON.parse(cachedData))
+      } else {
+        console.log(`[API] 歌单 ${id} 全部歌曲缓存已过期`)
+        localStorage.removeItem(cacheKey)
+      }
+    }
+
     const data = (
       await axios({
         method: 'get',
         url: `${IP}/playlist/track/all?id=${id}${cookieValue ? '&cookie=' + cookieValue : ''}`,
       })
     ).data
+
+    // 缓存数据
+    if (cookieValue) {
+      localStorage.setItem(cacheKey, JSON.stringify(data))
+      localStorage.setItem(cacheKey + '_time', Date.now().toString())
+      console.log(`[API] 歌单 ${id} 全部歌曲已缓存`)
+    }
+
     return Promise.resolve(data)
   } catch (error) {
     console.error(`[API] 获取歌单 ${id} 全部歌曲失败:`, error)
@@ -384,13 +439,41 @@ export async function getPlaylistAllTracks(id: string): Promise<any[]> {
   }
 }
 
-// 获取歌单详情
+// 获取歌单详情（带缓存）
 export async function getPlaylistDetail(id: string): Promise<any> {
+  const cacheKey = `playlist_detail_${id}`
+
   try {
+    // 尝试从缓存读取
+    const cachedData = localStorage.getItem(cacheKey)
+    const cacheTime = localStorage.getItem(cacheKey + '_time')
+
+    if (cachedData && cacheTime) {
+      const now = Date.now()
+      const cacheAge = now - parseInt(cacheTime, 10)
+      const oneHour = 60 * 60 * 1000 // 1小时的毫秒数
+
+      if (cacheAge < oneHour) {
+        console.log(`[API] 从缓存获取歌单详情 ${id}`)
+        return Promise.resolve(JSON.parse(cachedData))
+      } else {
+        console.log(`[API] 歌单详情 ${id} 缓存已过期`)
+        localStorage.removeItem(cacheKey)
+      }
+    }
+
     const response = await axios({
       method: 'get',
       url: `${IP}/playlist/detail?id=${id}${cookieValue ? '&cookie=' + cookieValue : ''}`,
     })
+
+    // 缓存数据
+    if (cookieValue) {
+      localStorage.setItem(cacheKey, JSON.stringify(response.data))
+      localStorage.setItem(cacheKey + '_time', Date.now().toString())
+      console.log(`[API] 歌单详情 ${id} 已缓存`)
+    }
+
     return response.data
   } catch (error) {
     console.error('获取歌单详情失败:', error)
@@ -419,20 +502,30 @@ export async function getLyric(id: string): Promise<any> {
   }
 }
 
-// 喜欢音乐
+// 喜欢音乐（新版 API）
 export async function likeMusic(id: string, like?: boolean): Promise<any> {
-  let likes
-  if (like === undefined) {
-    // 如果未指定 like 参数，则切换喜欢状态
-    likes = ''
-  } else {
-    likes = like ? '&like=true' : '&like=false'
+  // 获取当前用户 ID
+  let uid = 0
+  try {
+    const accountRes = await getUserAccount()
+    if (accountRes.success && accountRes.data) {
+      uid = accountRes.data.account?.id || accountRes.data.profile?.userId || 0
+    }
+  } catch (error) {
+    console.warn('获取用户 ID 失败，使用默认值 0:', error)
   }
-  console.log(`${IP}/like?id=${id}${likes}${cookieValue ? '&cookie=' + cookieValue : ''}`)
+
+  // 如果未指定 like 参数，则默认为 true（喜欢）
+  const likeStatus = like === undefined ? true : like
+
+  console.log(
+    `${IP}/song/like?id=${id}&uid=${uid}&like=${likeStatus}${cookieValue ? '&cookie=' + cookieValue : ''}`,
+  )
+
   let data = (
     await axios({
       method: 'get',
-      url: `${IP}/like?id=${id}${likes}${cookieValue ? '&cookie=' + cookieValue : ''}`,
+      url: `${IP}/song/like?id=${id}&uid=${uid}&like=${likeStatus}${cookieValue ? '&cookie=' + cookieValue : ''}`,
     })
   ).data
   return Promise.resolve(data)
@@ -482,17 +575,15 @@ export async function getTopList(): Promise<any> {
 // 获取每日推荐音乐
 export async function getRecommendMusic(forceRefresh: boolean = false): Promise<any> {
   const cacheKey = 'getRecommendMusic'
-  const cacheTimeKey = 'getRecommendMusic_time'
-
   // 如果强制刷新，清除缓存
   if (forceRefresh) {
     console.log('[API] 强制刷新推荐歌曲，清除缓存')
     localStorage.removeItem(cacheKey)
-    localStorage.removeItem(cacheTimeKey)
+    localStorage.removeItem(cacheKey + '_time')
   }
 
   const data = localStorage.getItem(cacheKey)
-  const cacheTime = localStorage.getItem(cacheTimeKey)
+  const cacheTime = localStorage.getItem(cacheKey + '_time')
 
   // 检查缓存是否存在且未过期（1小时 = 3600000毫秒）
   if (!forceRefresh && data && cacheTime) {
@@ -507,7 +598,7 @@ export async function getRecommendMusic(forceRefresh: boolean = false): Promise<
       console.log('[API] 推荐歌曲缓存已过期')
       // 清除过期缓存
       localStorage.removeItem(cacheKey)
-      localStorage.removeItem(cacheTimeKey)
+      localStorage.removeItem(cacheKey + '_time')
     }
   }
 
@@ -522,7 +613,7 @@ export async function getRecommendMusic(forceRefresh: boolean = false): Promise<
   // 只有登录时才缓存
   if (cookieValue) {
     localStorage.setItem(cacheKey, JSON.stringify(newData))
-    localStorage.setItem(cacheTimeKey, Date.now().toString())
+    localStorage.setItem(cacheKey + '_time', Date.now().toString())
     console.log('[API] 推荐歌曲已缓存（登录状态）')
   } else {
     console.log('[API] 未登录，不缓存推荐歌曲')
@@ -578,7 +669,7 @@ export async function searchHot(): Promise<any> {
   }
 }
 
-// 获取用户歌单
+// 获取用户歌单（带缓存）
 export async function getUserPlaylist(
   uid: number,
   limit: number = 30,
@@ -589,7 +680,27 @@ export async function getUserPlaylist(
     return { playlist: [] }
   }
 
+  const cacheKey = `user_playlist_${uid}_limit_${limit}_offset_${offset}`
+
   try {
+    // 尝试从缓存读取
+    const cachedData = localStorage.getItem(cacheKey)
+    const cacheTime = localStorage.getItem(cacheKey + '_time')
+
+    if (cachedData && cacheTime) {
+      const now = Date.now()
+      const cacheAge = now - parseInt(cacheTime, 10)
+      const oneHour = 60 * 60 * 1000 // 1小时的毫秒数
+
+      if (cacheAge < oneHour) {
+        console.log(`[API] 从缓存获取用户 ${uid} 歌单`)
+        return Promise.resolve(JSON.parse(cachedData))
+      } else {
+        console.log(`[API] 用户 ${uid} 歌单缓存已过期`)
+        localStorage.removeItem(cacheKey)
+      }
+    }
+
     const response = await axios({
       method: 'get',
       url: `${IP}/user/playlist`,
@@ -600,6 +711,12 @@ export async function getUserPlaylist(
         cookie: cookieValue,
       },
     })
+
+    // 缓存数据
+    localStorage.setItem(cacheKey, JSON.stringify(response.data))
+    localStorage.setItem(cacheKey + '_time', Date.now().toString())
+    console.log(`[API] 用户 ${uid} 歌单已缓存`)
+
     return response.data
   } catch (error) {
     console.error('获取用户歌单失败:', error)
@@ -607,13 +724,33 @@ export async function getUserPlaylist(
   }
 }
 
-// 获取用户收藏歌单
+// 获取用户收藏歌单（带缓存）
 export async function getUserPlaylistCollect(
   uid: number,
   limit: number = 100,
   offset: number = 0,
 ): Promise<any> {
+  const cacheKey = `user_playlist_collect_${uid}_limit_${limit}_offset_${offset}`
+
   try {
+    // 尝试从缓存读取
+    const cachedData = localStorage.getItem(cacheKey)
+    const cacheTime = localStorage.getItem(cacheKey + '_time')
+
+    if (cachedData && cacheTime) {
+      const now = Date.now()
+      const cacheAge = now - parseInt(cacheTime, 10)
+      const oneHour = 60 * 60 * 1000 // 1小时的毫秒数
+
+      if (cacheAge < oneHour) {
+        console.log(`[API] 从缓存获取用户 ${uid} 收藏歌单`)
+        return Promise.resolve(JSON.parse(cachedData))
+      } else {
+        console.log(`[API] 用户 ${uid} 收藏歌单缓存已过期`)
+        localStorage.removeItem(cacheKey)
+      }
+    }
+
     const response = await axios({
       method: 'get',
       url: `${IP}/user/playlist/collect`,
@@ -624,6 +761,14 @@ export async function getUserPlaylistCollect(
         cookie: cookieValue,
       },
     })
+
+    // 缓存数据
+    if (cookieValue) {
+      localStorage.setItem(cacheKey, JSON.stringify(response.data))
+      localStorage.setItem(cacheKey + '_time', Date.now().toString())
+      console.log(`[API] 用户 ${uid} 收藏歌单已缓存`)
+    }
+
     return response.data
   } catch (error) {
     console.error('获取用户收藏歌单失败:', error)
@@ -631,13 +776,33 @@ export async function getUserPlaylistCollect(
   }
 }
 
-// 获取用户创建歌单
+// 获取用户创建歌单（带缓存）
 export async function getUserPlaylistCreate(
   uid: number,
   limit: number = 100,
   offset: number = 0,
 ): Promise<any> {
+  const cacheKey = `user_playlist_create_${uid}_limit_${limit}_offset_${offset}`
+
   try {
+    // 尝试从缓存读取
+    const cachedData = localStorage.getItem(cacheKey)
+    const cacheTime = localStorage.getItem(cacheKey + '_time')
+
+    if (cachedData && cacheTime) {
+      const now = Date.now()
+      const cacheAge = now - parseInt(cacheTime, 10)
+      const oneHour = 60 * 60 * 1000 // 1小时的毫秒数
+
+      if (cacheAge < oneHour) {
+        console.log(`[API] 从缓存获取用户 ${uid} 创建歌单`)
+        return Promise.resolve(JSON.parse(cachedData))
+      } else {
+        console.log(`[API] 用户 ${uid} 创建歌单缓存已过期`)
+        localStorage.removeItem(cacheKey)
+      }
+    }
+
     const response = await axios({
       method: 'get',
       url: `${IP}/user/playlist/create`,
@@ -648,6 +813,14 @@ export async function getUserPlaylistCreate(
         cookie: cookieValue,
       },
     })
+
+    // 缓存数据
+    if (cookieValue) {
+      localStorage.setItem(cacheKey, JSON.stringify(response.data))
+      localStorage.setItem(cacheKey + '_time', Date.now().toString())
+      console.log(`[API] 用户 ${uid} 创建歌单已缓存`)
+    }
+
     return response.data
   } catch (error) {
     console.error('获取用户创建歌单失败:', error)

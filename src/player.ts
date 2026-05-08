@@ -399,9 +399,8 @@ export class AudioPlayer {
         if (this.index.value < this.playlist.value.length - 1) {
           newIndex = this.index.value + 1
         } else {
-          // 最后一首，停止播放
-          this.pause()
-          return
+          // 最后一首，切换到第一首
+          newIndex = 0
         }
         break
       case PlayMode.ListLoop:

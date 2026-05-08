@@ -1,8 +1,8 @@
 <template>
     <v-slider v-model="localTime" :max="player.duration.value" @start="onStart" @end="onEnd" hide-details track-size="6"
-        thumb-size="0" :thumb-transition="false" class="pa-0 ma-0" />
+        thumb-size="0" :thumb-transition="false" class="pa-0 ma-0" :color="props.themeColor" />
 
-    <div class="text-time">
+    <div class="text-time" :style="{ color: props.themeColor || 'rgba(255, 255, 255, 0.6)' }">
         <p>{{ formatTime(localTime) }}</p>
         <p>{{ formatTime(player.duration.value) }}</p>
     </div>
@@ -10,6 +10,11 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { player } from '@/staic'
+
+// 🎨 接收主题颜色
+const props = defineProps<{
+    themeColor?: string
+}>()
 
 const localTime = ref(player.currentTime.value)
 

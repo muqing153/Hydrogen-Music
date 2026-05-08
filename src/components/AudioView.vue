@@ -2,18 +2,19 @@
     <!-- 🌫 背景 -->
     <div class="bg" :style="{
         backgroundImage: `url(${imageSrc})`,
-        transform: `scale(${scale}) rotate(${rotate}deg)`
+        transform: `translate(-50%, -50%) scale(${scale}) rotate(${rotate}deg)`
     }" />
-    <v-sheet class="fullscreen">
+    <v-sheet class="fullscreen" :style="{ '--theme-color': themeColor }">
 
         <!-- 顶部按钮 -->
         <div class="top-btn">
-            <v-btn icon="mdi-fullscreen-exit" variant="plain" @click="Close()" />
+            <v-btn icon="mdi-fullscreen-exit" variant="plain" @click="Close()" :style="{ color: themeColor }" />
         </div>
 
         <!-- 🎵 右上角播放列表按钮 -->
         <div class="playlist-btn">
-            <v-btn icon @click='navigationrightShow = !navigationrightShow' variant="plain">
+            <v-btn icon @click='navigationrightShow = !navigationrightShow' variant="plain"
+                :style="{ color: themeColor }">
                 <v-icon>mdi-playlist-music</v-icon>
             </v-btn>
         </div>
@@ -34,17 +35,17 @@
 
                     <!-- 歌曲信息 -->
                     <div class="apple-info">
-                        <p class="song-name">
+                        <p class="song-name" :style="{ color: themeColor }">
                             {{ player.currentTrack.value?.name ?? '暂无歌曲' }}
                         </p>
-                        <p class="artist-name">
+                        <p class="artist-name" :style="{ color: themeColor + '99' }">
                             {{ player.currentTrack.value?.artist ?? '暂无作者' }}
                         </p>
                     </div>
 
                     <!-- 进度条 -->
                     <div class="apple-progress">
-                        <SliderView />
+                        <SliderView :theme-color="themeColor" />
                     </div>
 
                     <!-- 控制按钮 -->
@@ -52,18 +53,21 @@
                         <!-- 喜欢按钮 -->
                         <v-btn
                             :icon="player.isSongLiked(player.currentTrack.value?.id || '') ? 'mdi-heart' : 'mdi-heart-outline'"
-                            :color="player.isSongLiked(player.currentTrack.value?.id || '') ? 'red' : undefined"
+                            :color="player.isSongLiked(player.currentTrack.value?.id || '') ? 'red' : themeColor"
                             variant="text" @click="player.like(player.currentTrack.value?.id)" />
-                        <v-btn icon="mdi-skip-previous" variant="text" @click="player.prev()" />
+                        <v-btn icon="mdi-skip-previous" variant="text" :style="{ color: themeColor }"
+                            @click="player.prev()" />
                         <v-btn :icon="player.isPlaying.value ? 'mdi-pause' : 'mdi-play'" variant="text" size="large"
-                            @click="player.toggle()" />
-                        <v-btn icon="mdi-skip-next" variant="text" @click="player.next()" />
-                        <v-btn :icon="getPlayModeIcon()" variant="text" @click="player.SetPlayMode()" />
+                            :style="{ color: themeColor }" @click="player.toggle()" />
+                        <v-btn icon="mdi-skip-next" variant="text" :style="{ color: themeColor }"
+                            @click="player.next()" />
+                        <v-btn :icon="getPlayModeIcon()" variant="text" :style="{ color: themeColor }"
+                            @click="player.SetPlayMode()" />
                     </div>
 
                     <!-- 音量 -->
                     <div class="apple-volume">
-                        <SliderSoundView />
+                        <SliderSoundView :theme-color="themeColor" />
                     </div>
 
                 </div>
@@ -72,15 +76,15 @@
             <div class="wave-divider">
                 <div v-for="i in wave.length - 1" :key="i" class="wave-dot" :style="{
                     width: 5 + wave[i]! * 46 + 'px',
-                    opacity: 0.3 + wave[i]!
+                    opacity: 0.3 + wave[i]!, backgroundColor: themeColor
                 }" />
             </div>
             <!-- 🎤 右侧歌词 -->
-            <v-col class="right">
-                <div class="content-sheet">
-                    <LrcView />
-                </div>
-            </v-col>
+            <!-- <v-col class=""> -->
+            <div class="right">
+                <LrcView :theme-color="themeColor" />
+            </div>
+            <!-- </v-col> -->
 
         </v-row>
 
@@ -110,17 +114,17 @@
                         <div class="mobile-bottom-section">
                             <!-- 歌曲信息 -->
                             <div class="mobile-info">
-                                <p class="song-name">
+                                <p class="song-name" :style="{ color: themeColor }">
                                     {{ player.currentTrack.value?.name ?? '暂无歌曲' }}
                                 </p>
-                                <p class="artist-name">
+                                <p class="artist-name" :style="{ color: themeColor + '99' }">
                                     {{ player.currentTrack.value?.artist ?? '暂无作者' }}
                                 </p>
                             </div>
 
                             <!-- 进度条 -->
                             <div class="mobile-progress">
-                                <SliderView />
+                                <SliderView :theme-color="themeColor" />
                             </div>
 
                             <!-- 控制按钮 -->
@@ -128,18 +132,21 @@
                                 <!-- 喜欢按钮 -->
                                 <v-btn
                                     :icon="player.isSongLiked(player.currentTrack.value?.id || '') ? 'mdi-heart' : 'mdi-heart-outline'"
-                                    :color="player.isSongLiked(player.currentTrack.value?.id || '') ? 'red' : undefined"
+                                    :color="player.isSongLiked(player.currentTrack.value?.id || '') ? 'red' : themeColor"
                                     variant="text" @click="player.like(player.currentTrack.value?.id)" />
-                                <v-btn icon="mdi-skip-previous" variant="text" @click="player.prev()" />
+                                <v-btn icon="mdi-skip-previous" variant="text" :style="{ color: themeColor }"
+                                    @click="player.prev()" />
                                 <v-btn :icon="player.isPlaying.value ? 'mdi-pause' : 'mdi-play'" variant="text"
-                                    size="large" @click="player.toggle()" />
-                                <v-btn icon="mdi-skip-next" variant="text" @click="player.next()" />
-                                <v-btn :icon="getPlayModeIcon()" variant="text" @click="player.SetPlayMode()" />
+                                    size="large" :style="{ color: themeColor }" @click="player.toggle()" />
+                                <v-btn icon="mdi-skip-next" variant="text" :style="{ color: themeColor }"
+                                    @click="player.next()" />
+                                <v-btn :icon="getPlayModeIcon()" variant="text" :style="{ color: themeColor }"
+                                    @click="player.SetPlayMode()" />
                             </div>
 
                             <!-- 音量 -->
                             <div class="mobile-volume">
-                                <SliderSoundView />
+                                <SliderSoundView :theme-color="themeColor" />
                             </div>
                         </div>
                     </div>
@@ -147,7 +154,7 @@
                     <!--  第二页：歌词 -->
                     <div class="mobile-slide mobile-lyrics-section">
                         <div class="mobile-content-sheet">
-                            <LrcView />
+                            <LrcView :theme-color="themeColor" />
                         </div>
                     </div>
                 </div>
@@ -161,7 +168,8 @@
 <script setup lang="ts">
 import { AudioViewShow, player } from '@/staic'
 import { navigationrightShow } from '@/state'
-import { ref, onMounted, watch, nextTick } from 'vue'
+import { ref, onMounted, watch, nextTick, computed } from 'vue'
+import { useTheme } from 'vuetify'
 import router from '@/router'
 import LrcView from '@/View/LrcView.vue'
 import SliderView from '@/View/SliderView.vue'
@@ -170,7 +178,14 @@ import axios from 'axios'
 import { PlayMode } from '@/player'
 import { getLyric } from '@/api'
 
+// 🎨 获取 Vuetify 主题
+const vuetifyTheme = useTheme()
+
 const imageSrc = ref<string>('')
+
+// 🎨 计算当前主题的反差色（深色主题用白色，浅色主题用深色）
+const themeColor = ref<string>(vuetifyTheme.global.current.value.dark ? '#ffffff' : '#1a1a1a')
+
 
 // 移动端滑动相关
 const currentSlide = ref(0) // 0: 封面页, 1: 歌词页
@@ -215,6 +230,7 @@ const loadImage = async (url?: string) => {
 
     if (!url.startsWith('http')) {
         imageSrc.value = url
+        extractDominantColor(url)
         return
     }
 
@@ -226,11 +242,87 @@ const loadImage = async (url?: string) => {
         reader.onloadend = () => {
             const base64 = reader.result as string
             imageSrc.value = base64
+            // 🎨 提取主题颜色
+            extractDominantColor(base64)
             resolve(base64)
         }
         reader.onerror = reject
         reader.readAsDataURL(res.data)
     })
+}
+
+/* =========================
+   🎨 提取图片主色调并计算反差色
+========================= */
+function extractDominantColor(imageUrl: string) {
+    const img = new Image()
+    img.crossOrigin = 'Anonymous'
+
+    img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+
+        // 缩小图片以提高性能
+        const size = 50
+        canvas.width = size
+        canvas.height = size
+        ctx.drawImage(img, 0, 0, size, size)
+
+        // 获取像素数据
+        const imageData = ctx.getImageData(0, 0, size, size).data
+        let r = 0, g = 0, b = 0
+        let count = 0
+
+        // 采样像素（跳过透明像素）
+        for (let i = 0; i < imageData.length; i += 16) { // 每4个像素采样一次
+            const alpha = imageData[i + 3]
+            if (alpha !== undefined && alpha > 128) { // 忽略半透明像素
+                const red = imageData[i]
+                const green = imageData[i + 1]
+                const blue = imageData[i + 2]
+                if (red !== undefined && green !== undefined && blue !== undefined) {
+                    r += red
+                    g += green
+                    b += blue
+                    count++
+                }
+            }
+        }
+
+        if (count === 0) {
+            console.log('🎨 未找到有效像素，使用默认主题色')
+            return
+        }
+
+        // 计算平均颜色
+        r = Math.round(r / count)
+        g = Math.round(g / count)
+        b = Math.round(b / count)
+
+        // 🎯 计算互补色（色差最大的颜色）
+        const complementaryColor = getContrastingColor(r, g, b)
+        themeColor.value = complementaryColor
+        console.log(`🎨 提取颜色 - 原色: rgb(${r}, ${g}, ${b}), 反差色: ${complementaryColor}`)
+    }
+
+    img.src = imageUrl
+}
+
+/* =========================
+   🎯 计算与给定颜色反差最大的颜色
+========================= */
+function getContrastingColor(r: number, g: number, b: number): string {
+    // 方法1: 计算亮度，返回黑白中对比度更高的
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000
+
+    if (brightness > 128) {
+        // 亮色背景，返回深色文字
+        return '#1a1a1a'
+    } else {
+        // 暗色背景，返回浅色文字
+        return '#ffffff'
+    }
 }
 
 /* =========================
@@ -284,9 +376,6 @@ async function loadLyricForCurrentTrack() {
 const scale = ref(1)
 const rotate = ref(0)
 const wave = ref<number[]>(Array(30).fill(0))
-
-const half = Math.floor(wave.value.length / 2)
-
 function animate() {
     requestAnimationFrame(animate)
 
@@ -435,12 +524,16 @@ function getPlayModeIcon(): string {
     font-size: 20px;
     font-weight: 600;
     margin: 0;
+    /* 🎨 使用动态主题颜色 */
+    color: var(--theme-color, #ffffff);
+    transition: color 0.3s ease;
 }
 
 .artist-name {
     font-size: 14px;
-    opacity: 0.6;
     margin-top: 4px;
+    /* 🎨 使用主题颜色的半透明版本 */
+    opacity: 0.6;
 }
 
 /* 进度条 */
@@ -470,6 +563,19 @@ function getPlayModeIcon(): string {
     height: 100%;
     overflow: hidden;
     display: flex;
+    flex: 1;
+    margin-left: 26px;
+    /* 添加上下沉浸式效果 */
+    mask-image: linear-gradient(to bottom,
+            transparent 0%,
+            black 15%,
+            black 85%,
+            transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom,
+            transparent 0%,
+            black 15%,
+            black 85%,
+            transparent 100%);
 }
 
 .content-sheet {
@@ -487,7 +593,7 @@ function getPlayModeIcon(): string {
     height: 100%;
     flex-direction: column;
     position: relative;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.4) 100%);
+    background: transparent;
 }
 
 /* 滑动容器 */
@@ -597,7 +703,18 @@ function getPlayModeIcon(): string {
     width: 100%;
     height: 100%;
     overflow-y: auto;
-    padding: 60px 20px 100px;
+    padding: 0px 20px 40px;
+    /* 添加上下沉浸式效果 - 优化渐变范围 */
+    mask-image: linear-gradient(to bottom,
+            transparent 0%,
+            black 8%,
+            black 92%,
+            transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom,
+            transparent 0%,
+            black 8%,
+            black 92%,
+            transparent 100%);
     -webkit-overflow-scrolling: touch;
 }
 
@@ -633,25 +750,26 @@ function getPlayModeIcon(): string {
     position: fixed;
     width: 100vw;
     height: 100vh;
-    transition: filter 0.1s linear;
 }
 
 .bg {
-    position: fixed;
-    width: 120vw;
-    height: 100vw;
+    position: absolute;
 
-    top: -10vh;
-    left: -10vw;
+    width: 120vmax;
+    height: 120vmax;
+
+    left: 50%;
+    top: 50%;
 
     background-size: cover;
     background-position: center;
-    background-repeat: no-repeat;
 
-    filter: blur(90px) brightness(0.6) saturate(1.4);
+    filter: blur(80px) brightness(0.5) saturate(1.3);
 
-    transform-origin: center;
+    transition: filter 0.3s ease;
+    will-change: transform, filter;
 }
+
 
 .wave-divider {
     width: 20px;
@@ -671,8 +789,6 @@ function getPlayModeIcon(): string {
     /* 固定高度 */
     width: 5px;
     /* 默认细 */
-
-    background: rgba(255, 255, 255, 0.8);
     border-radius: 999px;
 
     transition: width 0.05s linear;

@@ -1,9 +1,9 @@
 <template>
     <v-row class="justify-center align-center">
-        <v-icon>mdi-volume-low</v-icon>
+        <v-icon :style="{ color: props.themeColor }">mdi-volume-low</v-icon>
         <v-slider v-model="player.volume.value" :min="0" :max="1" hide-details track-size="6" thumb-size="0" step="0.01"
-            v-on:start="sliderStart" v-on:end="sliderEnd" />
-        <v-icon>{{ Icon() }}</v-icon>
+            v-on:start="sliderStart" v-on:end="sliderEnd" :color="props.themeColor" />
+        <v-icon :style="{ color: props.themeColor }">{{ Icon() }}</v-icon>
     </v-row>
 
 </template>
@@ -11,6 +11,11 @@
 import { player } from '@/staic';
 import { onActivated, ref } from 'vue';
 import type { VCol, VIcon } from 'vuetify/components';
+
+// 🎨 接收主题颜色
+const props = defineProps<{
+    themeColor?: string
+}>()
 function sliderStart(value: number) {
     player.setVolume(value)
 }
