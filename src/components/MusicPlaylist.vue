@@ -29,7 +29,7 @@
                     </v-avatar>
                     <span class="creator-name">{{ playlistDetail.creator?.nickname || '未知' }}</span>
                     <span class="create-time">{{ playlistDetail.createTime ? formatDate(playlistDetail.createTime) : ''
-                    }}创建</span>
+                        }}创建</span>
                 </div>
 
                 <!-- 占位空间，将按钮推到底部 -->
