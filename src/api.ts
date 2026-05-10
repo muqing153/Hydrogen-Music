@@ -6,9 +6,6 @@ export const IP = isDev ? ' http://localhost:3000' : 'https://api.muqingcandy.cn
 // Cookie 管理
 let cookieValue = ''
 
-// 缓存时间键名
-const CACHE_TIME_KEY = 'cache_timestamp'
-
 // 初始化时从 localStorage 恢复 cookie
 function initCookie() {
   const savedCookie = localStorage.getItem('music_cookie')
@@ -442,7 +439,6 @@ export async function getPlaylistAllTracks(id: string): Promise<any[]> {
 // 获取歌单详情（带缓存）
 export async function getPlaylistDetail(id: string): Promise<any> {
   const cacheKey = `playlist_detail_${id}`
-
   try {
     // 尝试从缓存读取
     const cachedData = localStorage.getItem(cacheKey)
@@ -512,7 +508,8 @@ export async function likeMusic(id: string, like?: boolean): Promise<any> {
       uid = accountRes.data.account?.id || accountRes.data.profile?.userId || 0
     }
   } catch (error) {
-    console.warn('获取用户 ID 失败，使用默认值 0:', error)
+    console.warn('获取用户 ID 失败', error)
+    return Promise.reject(error)
   }
 
   // 如果未指定 like 参数，则默认为 true（喜欢）

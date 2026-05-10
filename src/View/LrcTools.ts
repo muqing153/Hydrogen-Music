@@ -39,7 +39,8 @@ export function parseLrcText(lrcText?: string | null): LrcLine[] {
   const lines = lrcText.split(/\r?\n/)
   const result: LrcLine[] = []
 
-  const timeReg = /\[(\d{2}):(\d{2})(?:\.(\d{2,3}))?\]/g
+  // 支持多种时间格式：[mm:ss] [mm:ss.ms] [mm:ss.mss] [mm:ss:ms]
+  const timeReg = /\[(\d{2}):(\d{2})(?:[.:](\d{1,3}))?\]/g
 
   lines.forEach((line) => {
     const trimmedLine = line.trim()
@@ -57,7 +58,9 @@ export function parseLrcText(lrcText?: string | null): LrcLine[] {
       tags.forEach((t) => {
         const min = Number(t[1])
         const sec = Number(t[2])
-        const ms = Number(String(t[3] ?? '0').padEnd(3, '0'))
+        // 处理毫秒部分：可能是0-3位数字，需要补齐到3位
+        const msStr = t[3] ?? '0'
+        const ms = Number(msStr.padEnd(3, '0').slice(0, 3))
         const time = min * 60 + sec + ms / 1000
         result.push({ time, text: content })
       })
