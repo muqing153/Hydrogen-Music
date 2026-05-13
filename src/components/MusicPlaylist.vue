@@ -29,7 +29,7 @@
                     </v-avatar>
                     <span class="creator-name">{{ playlistDetail.creator?.nickname || '未知' }}</span>
                     <span class="create-time">{{ playlistDetail.createTime ? formatDate(playlistDetail.createTime) : ''
-                        }}创建</span>
+                    }}创建</span>
                 </div>
 
                 <!-- 占位空间，将按钮推到底部 -->
@@ -46,9 +46,27 @@
                         height="40">
                         加入列表
                     </v-btn>
-                    <v-btn variant="tonal" rounded="xl" icon="mdi-dots-horizontal" class="more-btn" height="40"
-                        width="40">
-                    </v-btn>
+                    <v-menu location="bottom end">
+                        <template v-slot:activator="{ props }">
+                            <v-btn variant="tonal" rounded="xl" icon="mdi-dots-horizontal" class="more-btn" height="40"
+                                width="40" v-bind="props">
+                            </v-btn>
+                        </template>
+                        <v-list>
+                            <v-list-item @click="sharePlaylist">
+                                <template v-slot:prepend>
+                                    <v-icon>mdi-share-variant</v-icon>
+                                </template>
+                                <v-list-item-title>分享歌单</v-list-item-title>
+                            </v-list-item>
+                            <v-list-item @click="copyPlaylistLink">
+                                <template v-slot:prepend>
+                                    <v-icon>mdi-content-copy</v-icon>
+                                </template>
+                                <v-list-item-title>复制链接</v-list-item-title>
+                            </v-list-item>
+                        </v-list>
+                    </v-menu>
                 </div>
             </div>
         </div>
@@ -264,6 +282,79 @@ async function addAllToPlaylist() {
     } finally {
         isAddingAll.value = false;
     }
+}
+
+// 分享歌单
+function sharePlaylist() {
+    if (!playlistDetail.value || !id) return;
+
+    const shareData = {
+        title: playlistDetail.value.name || '歌单分享',
+        text: `分享歌单：${playlistDetail.value.name} - ${playlistDetail.value.creator?.nickname || ''}`,
+        url: window.location.href,
+    };
+
+    // 尝试使用 Web Share API
+    if (navigator.share) {
+        navigator.share(shareData)
+            .then(() => console.log('分享成功'))
+            .catch((error) => {
+                console.error('分享失败:', error);
+                // 如果分享失败，降级为复制链接
+                copyPlaylistLink();
+            });
+    } else {
+        // 不支持 Web Share API，直接复制链接
+        copyPlaylistLink();
+    }
+}
+
+// 复制歌单链接
+function copyPlaylistLink() {
+    if (!id) return;
+
+    const url = window.location.href;
+
+    navigator.clipboard.writeText(url)
+        .then(() => {
+            // 显示成功提示
+            showSnackbar('链接已复制到剪贴板');
+        })
+        .catch((error) => {
+            console.error('复制失败:', error);
+            showSnackbar('复制失败，请手动复制', 'error');
+        });
+}
+
+// 显示提示消息
+function showSnackbar(message: string, type: 'success' | 'error' = 'success') {
+    // 创建一个简单的提示元素
+    const snackbar = document.createElement('div');
+    snackbar.textContent = message;
+    snackbar.style.cssText = `
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 24px;
+        background-color: ${type === 'success' ? '#4CAF50' : '#f44336'};
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-size: 14px;
+        animation: fadeInUp 0.3s ease-out;
+    `;
+
+    document.body.appendChild(snackbar);
+
+    setTimeout(() => {
+        snackbar.style.opacity = '0';
+        snackbar.style.transition = 'opacity 0.3s ease-out';
+        setTimeout(() => {
+            document.body.removeChild(snackbar);
+        }, 300);
+    }, 2000);
 }
 
 
