@@ -330,7 +330,7 @@ function handlePlaylistClick(id: string) {
         player.toggle()
     } else {
         // 否则加载新歌单
-        player.loadPlaylist(id)
+        player.loadPlaylist(id, true)
     }
 }
 </script>
