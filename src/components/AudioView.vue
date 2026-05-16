@@ -22,22 +22,21 @@
         <!-- 主体 - 桌面端布局 -->
         <v-row no-gutters class="main-row desktop-layout">
 
-            <!-- 🍎 左侧 Apple Music -->
-            <v-col class="left" cols="4">
-                <div class="apple-wrapper">
-
+            <!-- 🍎 左侧播放器区域（自动） -->
+            <v-col cols="12" sm="5" md="4" lg="3">
+                <div class="apple-player-container">
                     <!-- 封面 -->
                     <div class="apple-cover">
-                        <v-card class="cover-card">
-                            <v-img :src="imageSrc" cover class="cover-img" />
+                        <v-card class="cover-card" elevation="8">
+                            <v-img :src="imageSrc" cover class="cover-img" aspect-ratio="1" />
                         </v-card>
                     </div>
 
                     <!-- 歌曲信息 -->
                     <div class="apple-info">
-                        <p class="song-name" :style="{ color: themeColor }">
+                        <h3 class="song-name" :style="{ color: themeColor }">
                             {{ player.currentTrack.value?.name ?? '暂无歌曲' }}
-                        </p>
+                        </h3>
                         <p class="artist-name" :style="{ color: themeColor + '99' }">
                             {{ player.currentTrack.value?.artist ?? '暂无作者' }}
                         </p>
@@ -54,37 +53,40 @@
                         <v-btn
                             :icon="player.isSongLiked(player.currentTrack.value?.id || '') ? 'mdi-heart' : 'mdi-heart-outline'"
                             :color="player.isSongLiked(player.currentTrack.value?.id || '') ? 'red' : themeColor"
-                            variant="text" @click="player.like(player.currentTrack.value?.id)" />
-                        <v-btn icon="mdi-skip-previous" variant="text" :style="{ color: themeColor }"
-                            @click="player.prev()" />
+                            variant="text" density="comfortable" @click="player.like(player.currentTrack.value?.id)"
+                            aria-label="喜欢歌曲" />
+                        <v-btn icon="mdi-skip-previous" variant="text" density="comfortable"
+                            :style="{ color: themeColor }" @click="player.prev()" aria-label="上一首" />
                         <v-btn :icon="player.isPlaying.value ? 'mdi-pause' : 'mdi-play'" variant="text" size="large"
-                            :style="{ color: themeColor }" @click="player.toggle()" />
-                        <v-btn icon="mdi-skip-next" variant="text" :style="{ color: themeColor }"
-                            @click="player.next()" />
-                        <v-btn :icon="getPlayModeIcon()" variant="text" :style="{ color: themeColor }"
-                            @click="player.SetPlayMode()" />
+                            density="comfortable" :style="{ color: themeColor }" @click="player.toggle()"
+                            aria-label="播放/暂停" />
+                        <v-btn icon="mdi-skip-next" variant="text" density="comfortable" :style="{ color: themeColor }"
+                            @click="player.next()" aria-label="下一首" />
+                        <v-btn :icon="getPlayModeIcon()" variant="text" density="comfortable"
+                            :style="{ color: themeColor }" @click="player.SetPlayMode()" aria-label="切换播放模式" />
                     </div>
 
                     <!-- 音量 -->
                     <div class="apple-volume">
                         <SliderSoundView :theme-color="themeColor" />
                     </div>
-
                 </div>
             </v-col>
-            <!-- 🎧 音频可视化分割 -->
+
+            <!-- 🎧 音频可视化分割线 -->
             <div class="wave-divider">
                 <div v-for="i in wave.length - 1" :key="i" class="wave-dot" :style="{
-                    width: 5 + wave[i]! * 46 + 'px',
-                    opacity: 0.3 + wave[i]!, backgroundColor: themeColor
+                    width: 3 + wave[i]! * 28 + 'px',
+                    opacity: 0.2 + wave[i]! * 0.8,
+                    backgroundColor: themeColor,
+                    boxShadow: `0 0 ${6 + wave[i]! * 10}px ${themeColor}35`
                 }" />
             </div>
-            <!-- 🎤 右侧歌词 -->
-            <!-- <v-col class=""> -->
-            <div class="right">
+
+            <!-- 🎤 右侧歌词区域（70%） -->
+            <v-col class="right" cols="12" sm="7" md="8" lg="9">
                 <LrcView :theme-color="themeColor" />
-            </div>
-            <!-- </v-col> -->
+            </v-col>
 
         </v-row>
 
@@ -104,8 +106,8 @@
                         <!-- 封面区域 - 居中 -->
                         <div class="mobile-cover-area">
                             <div class="mobile-cover">
-                                <v-card class="mobile-cover-card">
-                                    <v-img :src="imageSrc" cover class="mobile-cover-img" />
+                                <v-card class="mobile-cover-card" elevation="8">
+                                    <v-img :src="imageSrc" cover class="mobile-cover-img" aspect-ratio="1" />
                                 </v-card>
                             </div>
                         </div>
@@ -114,9 +116,9 @@
                         <div class="mobile-bottom-section">
                             <!-- 歌曲信息 -->
                             <div class="mobile-info">
-                                <p class="song-name" :style="{ color: themeColor }">
+                                <h3 class="song-name" :style="{ color: themeColor }">
                                     {{ player.currentTrack.value?.name ?? '暂无歌曲' }}
-                                </p>
+                                </h3>
                                 <p class="artist-name" :style="{ color: themeColor + '99' }">
                                     {{ player.currentTrack.value?.artist ?? '暂无作者' }}
                                 </p>
@@ -133,15 +135,17 @@
                                 <v-btn
                                     :icon="player.isSongLiked(player.currentTrack.value?.id || '') ? 'mdi-heart' : 'mdi-heart-outline'"
                                     :color="player.isSongLiked(player.currentTrack.value?.id || '') ? 'red' : themeColor"
-                                    variant="text" @click="player.like(player.currentTrack.value?.id)" />
-                                <v-btn icon="mdi-skip-previous" variant="text" :style="{ color: themeColor }"
-                                    @click="player.prev()" />
+                                    variant="text" density="comfortable"
+                                    @click="player.like(player.currentTrack.value?.id)" aria-label="喜欢歌曲" />
+                                <v-btn icon="mdi-skip-previous" variant="text" density="comfortable"
+                                    :style="{ color: themeColor }" @click="player.prev()" aria-label="上一首" />
                                 <v-btn :icon="player.isPlaying.value ? 'mdi-pause' : 'mdi-play'" variant="text"
-                                    size="large" :style="{ color: themeColor }" @click="player.toggle()" />
-                                <v-btn icon="mdi-skip-next" variant="text" :style="{ color: themeColor }"
-                                    @click="player.next()" />
-                                <v-btn :icon="getPlayModeIcon()" variant="text" :style="{ color: themeColor }"
-                                    @click="player.SetPlayMode()" />
+                                    size="large" density="comfortable" :style="{ color: themeColor }"
+                                    @click="player.toggle()" aria-label="播放/暂停" />
+                                <v-btn icon="mdi-skip-next" variant="text" density="comfortable"
+                                    :style="{ color: themeColor }" @click="player.next()" aria-label="下一首" />
+                                <v-btn :icon="getPlayModeIcon()" variant="text" density="comfortable"
+                                    :style="{ color: themeColor }" @click="player.SetPlayMode()" aria-label="切换播放模式" />
                             </div>
 
                             <!-- 音量 -->
@@ -459,17 +463,41 @@ function getPlayModeIcon(): string {
 /* 顶部按钮 */
 .top-btn {
     position: absolute;
-    top: 10px;
-    left: 10px;
+    top: 16px;
+    left: 16px;
     z-index: 20;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+}
+
+.top-btn .v-btn {
+    transition: all 0.2s ease;
+}
+
+.top-btn .v-btn:hover {
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* 🎵 右上角播放列表按钮 */
 .playlist-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 16px;
+    right: 16px;
     z-index: 20;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+}
+
+.playlist-btn .v-btn {
+    transition: all 0.2s ease;
+}
+
+.playlist-btn .v-btn:hover {
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* 主体 */
@@ -480,34 +508,76 @@ function getPlayModeIcon(): string {
 /* =======================
    🍎 Apple Music 左侧
 ======================= */
-.left {
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
 
-.apple-wrapper {
-    width: 85%;
-    max-width: 360px;
+
+.apple-player-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 18px;
+    justify-content: center;
+    gap: 24px;
+    height: 100%;
+    width: 100%;
+    padding: 36px;
+}
+
+/* 大屏幕优化 */
+@media (min-width: 1400px) {
+
+    .apple-cover {
+        width: 280px !important;
+        height: 280px !important;
+    }
+}
+
+@media (min-width: 1600px) {
+    .apple-cover {
+        width: 260px !important;
+        height: 260px !important;
+    }
+}
+
+@media (min-width: 1920px) {
+
+    .apple-cover {
+        width: 240px !important;
+        height: 240px !important;
+    }
+}
+
+@media (min-width: 2560px) {
+
+    .apple-cover {
+        width: 260px !important;
+        height: 260px !important;
+    }
 }
 
 /* 封面 */
 .apple-cover {
-    width: 260px;
-    height: 260px;
+    width: 300px;
+    height: 300px;
+    max-width: 100%;
+    transition: transform 0.3s ease;
+}
+
+.apple-cover:hover {
+    transform: scale(1.02);
 }
 
 .cover-card {
     width: 100%;
     height: 100%;
-    border-radius: 18px;
+    border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.45),
+        0 10px 30px rgba(0, 0, 0, 0.3);
+    transition: box-shadow 0.3s ease;
+}
+
+.apple-cover:hover .cover-card {
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55),
+        0 15px 40px rgba(0, 0, 0, 0.4);
 }
 
 .cover-img {
@@ -518,27 +588,38 @@ function getPlayModeIcon(): string {
 /* 信息 */
 .apple-info {
     text-align: center;
+    width: 100%;
+    max-width: 400px;
 }
 
 .song-name {
-    font-size: 20px;
-    font-weight: 600;
+    font-size: 24px;
+    font-weight: 700;
     margin: 0;
-    /* 🎨 使用动态主题颜色 */
+    letter-spacing: 0.5px;
     color: var(--theme-color, #ffffff);
     transition: color 0.3s ease;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .artist-name {
-    font-size: 14px;
-    margin-top: 4px;
-    /* 🎨 使用主题颜色的半透明版本 */
-    opacity: 0.6;
+    font-size: 16px;
+    margin-top: 10px;
+    opacity: 0.65;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* 进度条 */
 .apple-progress {
     width: 100%;
+    padding: 0 8px;
 }
 
 /* 控制按钮 */
@@ -546,14 +627,37 @@ function getPlayModeIcon(): string {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 18px;
-    opacity: 0.8;
+    gap: 20px;
+    opacity: 0.85;
+    transition: opacity 0.3s ease;
+    flex-wrap: wrap;
+}
+
+.apple-controls:hover {
+    opacity: 1;
+}
+
+.apple-controls .v-btn {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.apple-controls .v-btn:hover {
+    transform: scale(1.1);
+}
+
+.apple-controls .v-btn:active {
+    transform: scale(0.95);
 }
 
 /* 音量 */
 .apple-volume {
     width: 100%;
-    opacity: 0.8;
+    opacity: 0.75;
+    transition: opacity 0.3s ease;
+}
+
+.apple-volume:hover {
+    opacity: 0.95;
 }
 
 /* =======================
@@ -564,25 +668,18 @@ function getPlayModeIcon(): string {
     overflow: hidden;
     display: flex;
     flex: 1;
-    margin-left: 26px;
-    /* 添加上下沉浸式效果 */
+    margin-left: 0;
+    padding: 0 32px;
     mask-image: linear-gradient(to bottom,
             transparent 0%,
-            black 15%,
-            black 85%,
+            black 12%,
+            black 88%,
             transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom,
             transparent 0%,
-            black 15%,
-            black 85%,
+            black 12%,
+            black 88%,
             transparent 100%);
-}
-
-.content-sheet {
-    width: 100%;
-    height: 100%;
-    overflow-y: auto;
-    padding: 60px 40px;
 }
 
 /* =======================
@@ -631,21 +728,27 @@ function getPlayModeIcon(): string {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
+    padding: 30px 20px;
 }
 
 .mobile-cover {
-    width: 280px;
-    height: 280px;
-    max-width: 80vw;
+    width: 300px;
+    height: 300px;
+    max-width: 75vw;
+    transition: transform 0.3s ease;
+}
+
+.mobile-cover:active {
+    transform: scale(0.98);
 }
 
 .mobile-cover-card {
     width: 100%;
     height: 100%;
-    border-radius: 18px;
+    border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.45),
+        0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .mobile-cover-img {
@@ -655,26 +758,38 @@ function getPlayModeIcon(): string {
 
 /* 底部信息区域 */
 .mobile-bottom-section {
-    padding: 0 24px 30px;
+    padding: 0 28px 35px;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 18px;
 }
 
 .mobile-info {
     width: 100%;
+    text-align: center;
+    max-width: 400px;
 }
 
 .mobile-info .song-name {
-    font-size: 20px;
-    font-weight: 600;
+    font-size: 21px;
+    font-weight: 700;
     margin: 0;
+    letter-spacing: 0.5px;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .mobile-info .artist-name {
-    font-size: 14px;
-    opacity: 0.6;
-    margin-top: 4px;
+    font-size: 15px;
+    opacity: 0.65;
+    margin-top: 8px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .mobile-progress {
@@ -685,13 +800,22 @@ function getPlayModeIcon(): string {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 18px;
-    opacity: 0.8;
+    gap: 20px;
+    opacity: 0.85;
+    flex-wrap: wrap;
+}
+
+.mobile-controls .v-btn {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-controls .v-btn:active {
+    transform: scale(0.9);
 }
 
 .mobile-volume {
     width: 100%;
-    opacity: 0.8;
+    opacity: 0.75;
 }
 
 .mobile-lyrics-section {
@@ -721,37 +845,35 @@ function getPlayModeIcon(): string {
 /* 页面指示器 */
 .page-indicator {
     position: absolute;
-    top: 25px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 8px;
+    gap: 10px;
     z-index: 10;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.08);
+    padding: 8px 16px;
+    border-radius: 20px;
 }
 
 .indicator-dot {
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.3);
     transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .indicator-dot.active {
-    background: rgba(255, 255, 255, 0.9);
-    width: 24px;
-    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.95);
+    width: 28px;
+    border-radius: 4px;
 }
 
 /* =======================
    🌫 背景
 ======================= */
-.fullscreen-img {
-    position: fixed;
-    width: 100vw;
-    height: 100vh;
-}
-
 .bg {
     position: absolute;
 
@@ -772,26 +894,22 @@ function getPlayModeIcon(): string {
 
 
 .wave-divider {
-    width: 20px;
+    width: 36px;
     height: 100%;
-
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-
-    gap: 5px;
+    gap: 3px;
 }
 
-/* ⭐关键：竖点 */
+/* ⭐关键：竖点 - 优化视觉效果 */
 .wave-dot {
-    height: 6px;
-    /* 固定高度 */
-    width: 5px;
-    /* 默认细 */
+    height: 4px;
+    width: 3px;
     border-radius: 999px;
-
-    transition: width 0.05s linear;
+    transition: all 0.06s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: width, opacity, box-shadow;
 }
 
 /* =======================
@@ -811,13 +929,13 @@ function getPlayModeIcon(): string {
 
     /* 调整顶部按钮位置 */
     .top-btn {
-        top: 8px;
-        left: 8px;
+        top: 12px;
+        left: 12px;
     }
 
     .playlist-btn {
-        top: 8px;
-        right: 8px;
+        top: 12px;
+        right: 12px;
     }
 
     /* 优化移动端触摸体验 */
@@ -829,16 +947,36 @@ function getPlayModeIcon(): string {
 
 @media (max-width: 480px) {
     .mobile-cover {
-        width: 240px;
-        height: 240px;
+        width: 260px;
+        height: 260px;
     }
 
     .mobile-player-section {
         padding: 0 15px 15px;
     }
 
+    .mobile-bottom-section {
+        padding: 0 20px 25px;
+        gap: 15px;
+    }
+
     .mobile-controls {
-        gap: 12px;
+        gap: 15px;
+    }
+
+    .mobile-info .song-name {
+        font-size: 19px;
+    }
+
+    .mobile-info .artist-name {
+        font-size: 14px;
+    }
+
+    /* 优化小屏幕上的按钮大小 */
+    .apple-controls .v-btn,
+    .mobile-controls .v-btn {
+        min-width: 40px;
+        min-height: 40px;
     }
 }
 </style>

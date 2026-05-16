@@ -51,6 +51,10 @@ export class AudioPlayer {
   private analyser: AnalyserNode
   private source: MediaElementAudioSourceNode | null = null
 
+  // 本地存储键名
+  private readonly STORAGE_KEY = 'music_player_state'
+  private saveTimer: number | null = null
+
   public constructor() {
     this.audio = new Audio()
     this.audio.preload = 'auto'
@@ -65,6 +69,10 @@ export class AudioPlayer {
     this.audio.addEventListener('timeupdate', () => {
       // console.log('timeupdate', this.audio.currentTime)
       this.currentTime.value = this.audio.currentTime
+      // 节流保存播放进度（每5秒保存一次，避免过于频繁）
+      if (Math.floor(this.audio.currentTime) % 5 === 0) {
+        this.throttleSavePlayerState()
+      }
     })
     this.audio.addEventListener('loadedmetadata', () => {
       this.duration.value = this.audio.duration
@@ -91,6 +99,9 @@ export class AudioPlayer {
 
     // 初始化时加载用户喜欢的歌曲列表
     this.loadLikedSongs()
+
+    // 初始化时恢复播放状态
+    this.restorePlayerState()
   }
 
   /** 加载用户喜欢的歌曲列表 **/
@@ -106,6 +117,131 @@ export class AudioPlayer {
     }
   }
 
+  /** 保存播放器状态到 localStorage **/
+  private savePlayerState() {
+    try {
+      const state = {
+        playlistIds: this.playlist.value.map((track) => track.id),
+        currentIndex: this.index.value,
+        playMode: this.playMode.value,
+        currentTime: this.currentTime.value,
+        volume: this.volume.value,
+        timestamp: Date.now(),
+      }
+
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(state))
+      console.log('播放器状态已保存')
+    } catch (error) {
+      console.error('保存播放器状态失败:', error)
+    }
+  }
+
+  /** 从 localStorage 恢复播放器状态 **/
+  async restorePlayerState() {
+    try {
+      const savedState = localStorage.getItem(this.STORAGE_KEY)
+      if (!savedState) {
+        console.log('未找到保存的播放器状态')
+        return
+      }
+
+      const state = JSON.parse(savedState)
+      console.log('开始恢复播放器状态:', state)
+
+      // 恢复音量
+      if (state.volume !== undefined) {
+        this.setVolume(state.volume)
+        console.log(`音量已恢复: ${state.volume}`)
+      }
+
+      // 恢复播放模式
+      if (state.playMode !== undefined) {
+        this.playMode.value = state.playMode
+        console.log(`播放模式已恢复: ${this.getPlayModeName()}`)
+      }
+
+      // 恢复播放列表（需要重新获取歌曲详情）
+      if (state.playlistIds && state.playlistIds.length > 0) {
+        console.log(`正在恢复播放列表，共 ${state.playlistIds.length} 首歌曲`)
+
+        // 并行获取所有歌曲的基本信息
+        const songs = await Promise.all(
+          state.playlistIds.map(async (id: string) => {
+            try {
+              const infoRes = await axios.get(
+                `${IP}/song/detail?ids=${id}${getCookie() ? '&cookie=' + getCookie() : ''}`,
+              )
+
+              const songData = infoRes.data.songs[0]
+              if (!songData) return null
+
+              return {
+                id: id,
+                url: `${IP}/song/url/v1/302?id=${id}&level=exhigh${getCookie() ? '&cookie=' + getCookie() : ''}`,
+                name: songData.name,
+                artist: songData.ar.map((a: any) => a.name).join('/'),
+                picUrl: songData.al.picUrl + '?param=512y512',
+                lyric: null,
+              } as Track
+            } catch (error) {
+              console.error(`获取歌曲 ${id} 信息失败:`, error)
+              return null
+            }
+          }),
+        )
+
+        // 过滤掉失败的歌曲
+        const validSongs = songs.filter((song): song is Track => song !== null)
+        this.playlist.value = validSongs
+
+        if (validSongs.length > 0) {
+          // 恢复当前索引（确保不越界）
+          const safeIndex = Math.min(state.currentIndex || 0, validSongs.length - 1)
+          this.index.value = safeIndex
+
+          // 设置音频源并恢复进度
+          const currentTrack = validSongs[safeIndex]
+          if (currentTrack) {
+            this.audio.src = currentTrack.url
+            this.audio.load()
+
+            // 等待元数据加载完成后设置播放进度
+            this.audio.addEventListener(
+              'loadedmetadata',
+              () => {
+                if (state.currentTime) {
+                  this.audio.currentTime = Math.min(state.currentTime, this.audio.duration)
+                  console.log(`播放进度已恢复: ${this.formatTime(this.audio.currentTime)}`)
+                }
+              },
+              { once: true },
+            )
+
+            console.log(`已恢复到第 ${safeIndex + 1} 首歌曲: ${currentTrack.name}`)
+          }
+        } else {
+          console.warn('恢复的播放列表中没有可用的歌曲')
+        }
+      }
+
+      console.log('播放器状态恢复完成')
+    } catch (error) {
+      console.error('恢复播放器状态失败:', error)
+    }
+  }
+
+  /** 节流保存播放器状态（避免频繁写入） **/
+  private throttleSavePlayerState() {
+    if (this.saveTimer) {
+      clearTimeout(this.saveTimer)
+    }
+
+    this.saveTimer = window.setTimeout(() => {
+      this.savePlayerState()
+      this.saveTimer = null
+    }, 1000) // 1秒节流
+  }
+
   public SetPlayMode(mode?: number) {
     if (mode === undefined) {
       mode = this.playMode.value + 1
@@ -114,6 +250,9 @@ export class AudioPlayer {
     this.playMode.value = mode
 
     // 随机播放模式不再打乱歌单，改为动态调整顺序
+
+    // 保存播放模式变化
+    this.throttleSavePlayerState()
   }
 
   /** 随机播放时调整歌曲顺序：将选中的歌曲移到当前歌曲后面 */
@@ -178,6 +317,9 @@ export class AudioPlayer {
       track.lyric = await getLyric(track.id)
       this.playlist.value.push(track)
 
+      // 保存播放列表变化
+      this.throttleSavePlayerState()
+
       if (playNow) {
         this.playIndex(this.playlist.value.length - 1)
       }
@@ -237,6 +379,9 @@ export class AudioPlayer {
       this.play().catch((err) => {
         console.error('播放失败:', err)
       })
+
+      // 保存播放索引变化
+      this.throttleSavePlayerState()
     }
   }
 
@@ -278,6 +423,9 @@ export class AudioPlayer {
       const validSongs = songs.filter((song): song is Track => song !== null && song.url !== '')
       this.playlist.value = validSongs
 
+      // 保存播放列表变化
+      this.throttleSavePlayerState()
+
       if (validSongs.length > 0) {
         const firstSong = validSongs[0]!
         console.log('歌单加载完成，第一首歌:', {
@@ -305,6 +453,9 @@ export class AudioPlayer {
       }
 
       await this.audio.play()
+
+      // 保存播放状态
+      this.throttleSavePlayerState()
     } catch (err) {
       console.warn('播放失败，尝试重新获取音频 URL:', err)
 
@@ -350,6 +501,8 @@ export class AudioPlayer {
   }
   pause() {
     this.audio.pause()
+    // 保存播放状态
+    this.throttleSavePlayerState()
   }
   toggle() {
     this.isPlaying.value ? this.pause() : this.play()
@@ -462,6 +615,9 @@ export class AudioPlayer {
   setVolume(v: number) {
     this.volume.value = v
     this.audio.volume = v
+
+    // 保存音量变化
+    this.throttleSavePlayerState()
   }
 
   getFrequencyData() {
@@ -505,6 +661,10 @@ export class AudioPlayer {
     this.index.value = 0
     this.currentTime.value = 0
     this.duration.value = 0
+
+    // 清除保存的状态
+    localStorage.removeItem(this.STORAGE_KEY)
+    console.log('播放列表已清空，状态已清除')
   }
 
   /** 从播放列表中移除歌曲 **/
@@ -524,6 +684,9 @@ export class AudioPlayer {
       // 如果删除的是当前播放之前的歌曲，调整索引
       this.index.value--
     }
+
+    // 保存播放列表变化
+    this.throttleSavePlayerState()
   }
 
   /** 跳转到指定时间（支持相对和绝对时间） **/
