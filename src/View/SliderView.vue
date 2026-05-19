@@ -1,6 +1,6 @@
 <template>
     <v-slider v-model="localTime" :max="player.duration.value" @start="onStart" @end="onEnd" hide-details track-size="6"
-        thumb-size="0" :thumb-transition="false" class="pa-0 ma-0" :color="props.themeColor" />
+        thumb-size="0" :thumb-transition="false" :color="props.themeColor" />
 
     <div class="text-time" :style="{ color: props.themeColor || 'rgba(255, 255, 255, 0.6)' }">
         <p>{{ formatTime(localTime) }}</p>
@@ -48,13 +48,21 @@ function formatTime(time: number): string {
 }
 </script>
 <style scoped>
+.v-slider {
+    margin: 0;
+}
+
 .text-time {
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    width: 100%;
     font-size: 12px;
+    margin-top: 4px;
 }
 
 .text-time p {
     user-select: none;
+    margin: 0;
 }
 </style>

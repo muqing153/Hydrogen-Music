@@ -1,6 +1,5 @@
 import { ref } from 'vue'
 import { getPlayer } from './player'
-
 export const AudioViewShow = ref(false)
 // 使用单例模式获取播放器实例（HMR 安全）
 export const player = getPlayer()
@@ -14,5 +13,4 @@ export function sliderEnd(value: number) {
   player.seek(value)
   player.play()
 }
-
 // "NeteaseCloudMusicApi": "^4.28.0",

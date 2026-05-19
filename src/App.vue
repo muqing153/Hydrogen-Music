@@ -46,7 +46,6 @@ const {
         <v-list ref="navRef" density="compact" nav>
           <v-list-item prepend-icon="mdi-home-account" title="推荐" value="RecommendView" to="/"></v-list-item>
           <v-list-item prepend-icon="mdi-magnify" title="搜索" value="SearchView" to="/Search"></v-list-item>
-          <v-list-item prepend-icon="mdi-music-note" title="音频" value="AudioView" to="/AudioView"></v-list-item>
           <v-list-item prepend-icon="mdi-music" title="音乐表" value="MusicPlaylist" to="/MusicPlaylist"></v-list-item>
           <v-list-item prepend-icon="mdi-star" title="排行榜" value="TopView" to="/TopView"></v-list-item>
         </v-list>

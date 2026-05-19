@@ -625,10 +625,11 @@ function getPlayModeIcon(): string {
 /* 控制按钮 */
 .apple-controls {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
-    gap: 20px;
+    gap: 12px;
     opacity: 0.85;
+    width: 100%;
     transition: opacity 0.3s ease;
     flex-wrap: wrap;
 }

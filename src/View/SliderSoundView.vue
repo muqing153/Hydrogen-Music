@@ -1,11 +1,12 @@
 <template>
-    <v-row class="justify-center align-center">
-        <v-icon :style="{ color: props.themeColor }">mdi-volume-low</v-icon>
-        <v-slider v-model="player.volume.value" :min="0" :max="1" hide-details track-size="6" thumb-size="0" step="0.01"
-            v-on:start="sliderStart" v-on:end="sliderEnd" :color="props.themeColor" />
-        <v-icon :style="{ color: props.themeColor }">{{ Icon() }}</v-icon>
-    </v-row>
+    <v-slider v-model="player.volume.value" :min="0" :max="1" hide-details track-size="6" thumb-size="0" step="0.01"
+        @start="sliderStart" @end="sliderEnd" :color="props.themeColor" />
 
+    <div class="volume-icons">
+        <v-icon :style="{ color: props.themeColor }">mdi-volume-low</v-icon>
+        <v-spacer></v-spacer>
+        <v-icon :style="{ color: props.themeColor }">{{ Icon() }}</v-icon>
+    </div>
 </template>
 <script setup lang="ts">
 import { player } from '@/staic';
@@ -37,4 +38,17 @@ function Icon() {
 }
 
 </script>
-<style scoped></style>
+<style scoped>
+.v-slider {
+    margin: 0;
+}
+
+.volume-icons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    font-size: 12px;
+    margin-top: 4px;
+}
+</style>
