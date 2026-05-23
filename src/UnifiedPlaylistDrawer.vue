@@ -1,6 +1,6 @@
 <template>
     <v-navigation-drawer v-model="navigationrightShow" :location="computedLocation" temporary :width="drawerWidth"
-        class="responsive-playlist-drawer">
+        style="z-index: 2000; bottom: 0; right: 0;">
         <v-card flat class="pa-2 playlist-drawer">
             <!-- 顶部标题 -->
             <v-card-title class="d-flex align-center justify-space-between py-3">

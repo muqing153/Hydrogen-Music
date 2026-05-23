@@ -1,16 +1,15 @@
 <template>
     <!-- 🌫 背景 -->
-    <div class="bg" :style="{
-        backgroundImage: `url(${imageSrc})`,
-        transform: `translate(-50%, -50%) scale(${scale}) rotate(${rotate}deg)`
-    }" />
-    <v-sheet class="fullscreen" :style="{ '--theme-color': themeColor }">
 
+    <v-sheet class="fullscreen" :class="{ closing: isClosing }" :style="{ '--theme-color': themeColor }">
+        <div class="bg" :style="{
+            backgroundImage: `url(${imageSrc})`,
+            transform: `translate(-50%, -50%) scale(${scale}) rotate(${rotate}deg)`
+        }" />
         <!-- 顶部按钮 -->
         <div class="top-btn">
             <v-btn icon="mdi-fullscreen-exit" variant="plain" @click="Close()" :style="{ color: themeColor }" />
         </div>
-
         <!-- 🎵 右上角播放列表按钮 -->
         <div class="playlist-btn">
             <v-btn icon @click='navigationrightShow = !navigationrightShow' variant="plain"
@@ -18,7 +17,6 @@
                 <v-icon>mdi-playlist-music</v-icon>
             </v-btn>
         </div>
-
         <!-- 主体 - 桌面端布局 -->
         <v-row no-gutters class="main-row desktop-layout">
 
@@ -130,7 +128,7 @@
                             </div>
 
                             <!-- 控制按钮 -->
-                            <div class="mobile-controls">
+                            <div class="apple-controls">
                                 <!-- 喜欢按钮 -->
                                 <v-btn
                                     :icon="player.isSongLiked(player.currentTrack.value?.id || '') ? 'mdi-heart' : 'mdi-heart-outline'"
@@ -168,29 +166,23 @@
 
     </v-sheet>
 </template>
-
 <script setup lang="ts">
 import { AudioViewShow, player } from '@/staic'
 import { navigationrightShow } from '@/state'
 import { ref, onMounted, watch, nextTick, computed } from 'vue'
 import { useTheme } from 'vuetify'
-import router from '@/router'
 import LrcView from '@/View/LrcView.vue'
 import SliderView from '@/View/SliderView.vue'
 import SliderSoundView from '@/View/SliderSoundView.vue'
 import axios from 'axios'
 import { PlayMode } from '@/player'
 import { getLyric } from '@/api'
-
+import { tr } from 'vuetify/locale'
 // 🎨 获取 Vuetify 主题
 const vuetifyTheme = useTheme()
-
 const imageSrc = ref<string>('')
-
 // 🎨 计算当前主题的反差色（深色主题用白色，浅色主题用深色）
 const themeColor = ref<string>(vuetifyTheme.global.current.value.dark ? '#ffffff' : '#1a1a1a')
-
-
 // 移动端滑动相关
 const currentSlide = ref(0) // 0: 封面页, 1: 歌词页
 const touchStartX = ref(0)
@@ -424,9 +416,14 @@ function getMirrorWave(data: Uint8Array, size: number) {
 /* =========================
    关闭
 ========================= */
+const isClosing = ref(false)
+
 function Close() {
-    AudioViewShow.value = false
-    router.back()
+    isClosing.value = true
+    setTimeout(() => {
+        AudioViewShow.value = false
+        isClosing.value = false
+    }, 150) // 与 CSS transition 时长一致
 }
 
 /* =========================
@@ -450,14 +447,18 @@ function getPlayModeIcon(): string {
 
 <style scoped>
 /* =======================
-   全屏背景
+   全屏容器
 ======================= */
 .fullscreen {
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
     position: relative;
-    background: transparent;
+    transition: transform 0.15s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.fullscreen.closing {
+    transform: translateY(100%);
 }
 
 /* 顶部按钮 */
@@ -515,7 +516,7 @@ function getPlayModeIcon(): string {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 24px;
+    gap: 13px;
     height: 100%;
     width: 100%;
     padding: 36px;
@@ -619,7 +620,6 @@ function getPlayModeIcon(): string {
 /* 进度条 */
 .apple-progress {
     width: 100%;
-    padding: 0 8px;
 }
 
 /* 控制按钮 */
@@ -767,7 +767,6 @@ function getPlayModeIcon(): string {
 
 .mobile-info {
     width: 100%;
-    text-align: center;
     max-width: 400px;
 }
 
@@ -891,6 +890,7 @@ function getPlayModeIcon(): string {
 
     transition: filter 0.3s ease;
     will-change: transform, filter;
+    z-index: -999;
 }
 
 

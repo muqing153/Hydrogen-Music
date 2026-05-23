@@ -43,14 +43,44 @@
 
                 <v-card-text class="text-center">
                     <!-- 二维码显示区域 -->
-                    <div v-if="qrStatus === 'loading'" class="qr-loading pa-8">
+                    <div class="text-center mb-4">
+                        <v-btn variant="text" @click="toggleManualMode">
+                            {{ manualMode ? '隐藏手动填写 Cookie' : '手动填写 Cookie' }}
+                        </v-btn>
+                    </div>
+
+                    <div v-if="manualMode" class="manual-cookie-section mt-4">
+                        <v-textarea v-model="manualCookie" label="手动输入 Cookie" rows="4" auto-grow
+                            class="mb-3"></v-textarea>
+                        <div class="text-body-2 text-medium-emphasis mb-3">
+                            也可在控制台执行：<code>window.setMusicCookie('...')</code> 或
+                            <code>window.loginWithCookie('...')</code>
+                        </div>
+                        <v-btn color="primary" @click="applyManualCookie" :loading="manualApplying" class="mr-3">
+                            保存并验证
+                        </v-btn>
+                        <v-btn variant="text" @click="toggleManualMode">
+                            取消
+                        </v-btn>
+                        <v-alert v-if="manualError" type="error" variant="tonal" class="mt-4">
+                            {{ manualError }}
+                        </v-alert>
+                    </div>
+
+                    <div v-else-if="qrStatus === 'loading'" class="qr-loading pa-8">
                         <v-progress-circular indeterminate size="64" width="6" color="primary"></v-progress-circular>
                         <div class="mt-4 text-body-1">正在生成二维码...</div>
                     </div>
 
+                    <div v-else-if="qrStatus === 'expired'" class="qr-expired text-center">
+                        <v-alert type="error" variant="tonal" class="mb-4">
+                            二维码已过期，请刷新二维码
+                        </v-alert>
+                    </div>
+
                     <div v-else-if="qrBase64" class="qr-container">
                         <v-img :src="qrBase64" width="250" height="250" class="mx-auto mb-4" contain></v-img>
-
+                        1
                         <!-- 状态提示 -->
                         <v-alert v-if="statusMessage" :type="alertType" variant="tonal" density="compact" class="mb-4">
                             {{ statusMessage }}
@@ -98,6 +128,10 @@ const statusMessage = ref('')
 const errorMessage = ref('')
 const userInfo = ref<any>(null)
 const isLoggingOut = ref(false)
+const manualMode = ref(false)
+const manualCookie = ref('')
+const manualError = ref('')
+const manualApplying = ref(false)
 
 let checkTimer: number | null = null
 
@@ -158,11 +192,16 @@ function startPolling() {
         qrStatus.value = result.status
         statusMessage.value = result.message || ''
 
-        // 如果已授权或过期，停止轮询
-        if (result.status === 'authorized' || result.status === 'expired') {
+        // 如果已授权或过期，停止轮询（使用 qrStatus.value 避免与局部 result.status 的类型不匹配）
+        if (qrStatus.value === 'authorized' || qrStatus.value === 'expired') {
+            // 如果二维码已过期，清除本地二维码数据，提示用户手动刷新
+            if (qrStatus.value === 'expired') {
+                qrBase64.value = ''
+            }
+
             stopPolling()
 
-            if (result.status === 'authorized') {
+            if (qrStatus.value === 'authorized') {
                 // cookie 已经在 checkQRCodeStatus 中保存
                 console.log('[登录] 登录成功')
                 console.log('[登录] 当前 cookie 长度:', getCookie().length)
@@ -216,7 +255,58 @@ function getVipTypeText(vipType: number): string {
 // 刷新二维码
 function refreshQRCode() {
     stopPolling()
+    manualMode.value = false
     generateQRCode()
+}
+
+// 切换手动 Cookie 输入
+function toggleManualMode() {
+    manualMode.value = !manualMode.value
+    manualError.value = ''
+    if (manualMode.value) {
+        stopPolling()
+    } else if (!qrBase64.value) {
+        generateQRCode()
+    }
+}
+
+// 应用手动 Cookie
+async function applyManualCookie() {
+    manualError.value = ''
+    const cookie = manualCookie.value.trim()
+    if (!cookie) {
+        manualError.value = '请输入 Cookie 后再保存'
+        return
+    }
+
+    manualApplying.value = true
+    try {
+        setCookie(cookie)
+        statusMessage.value = '正在验证 Cookie，请稍候...'
+        qrStatus.value = 'waiting'
+
+        const result = await getUserAccount()
+        if (result.success && result.data) {
+            userInfo.value = result.data
+            localStorage.setItem('user_info', JSON.stringify(result.data))
+            statusMessage.value = 'Cookie 验证成功，登录成功'
+            qrStatus.value = 'authorized'
+
+            setTimeout(() => {
+                emit('login-success')
+                closeDialog()
+            }, 800)
+        } else {
+            setCookie('')
+            manualError.value = result.message || 'Cookie 验证失败，请检查 Cookie'
+        }
+    } catch (error) {
+        setCookie('')
+        manualError.value = 'Cookie 验证失败，请检查格式或网络'
+        console.error('[登录] 手动 Cookie 验证失败:', error)
+    } finally {
+        manualApplying.value = false
+    }
 }
 
 // 获取用户信息
@@ -278,6 +368,9 @@ watch(
             statusMessage.value = ''
             errorMessage.value = ''
             userInfo.value = null
+            manualMode.value = false
+            manualCookie.value = ''
+            manualError.value = ''
         }
     },
     { immediate: true },

@@ -54,14 +54,12 @@
 import { ref } from 'vue';
 import { navigationrightShow } from './state';
 
-import router from './router';
 import { AudioViewShow, player, sliderEnd, sliderStart } from './staic';
 // player
 const hover = ref(false)
 function startAudioView() {
     hover.value = false
     AudioViewShow.value = true
-    router.push('/AudioView')
 }
 </script>
 <style scoped>

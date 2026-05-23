@@ -18,6 +18,18 @@ function initCookie() {
 // 立即执行初始化
 initCookie()
 
+declare global {
+  interface Window {
+    setMusicCookie: (cookie: string) => void
+    getMusicCookie: () => string
+    loginWithCookie: (cookie: string) => Promise<{
+      success: boolean
+      data?: any
+      message?: string
+    }>
+  }
+}
+
 export function getCookie(): string {
   return cookieValue
 }
@@ -32,6 +44,19 @@ export function setCookie(cookie: string): void {
     localStorage.removeItem('music_cookie')
     console.log('[Cookie] cookie 已清除')
   }
+}
+
+function buildCookieBody(data: Record<string, string | number | undefined> = {}) {
+  const body = new URLSearchParams()
+  if (cookieValue) {
+    body.set('cookie', cookieValue)
+  }
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      body.set(key, String(value))
+    }
+  })
+  return body
 }
 
 // 二维码登录接口类型定义
@@ -180,7 +205,7 @@ export async function logout(): Promise<{ success: boolean; message?: string }> 
     // 如果已登录，先调用后端退出接口
     if (isLoggedIn()) {
       console.log('[登录] 正在调用后端退出接口...')
-      const response = await axios.get(`${IP}/logout?cookie=${cookieValue}`)
+      const response = await axios.post(`${IP}/logout`, buildCookieBody())
 
       if (response.data.code === 200) {
         console.log('[登录] 后端退出成功')
@@ -238,7 +263,7 @@ export async function getUserAccount(): Promise<{
 
   try {
     console.log('[API] getUserAccount: 获取用户信息, cookie 长度:', cookieValue.length)
-    const response = await axios.get(`${IP}/user/account?cookie=${cookieValue}`)
+    const response = await axios.post(`${IP}/user/account`, buildCookieBody())
     console.log('[API] getUserAccount: 完整响应:', response.data)
 
     // 网易云 API 返回格式：{ code: 200, data: { ... } } 或直接 { code: 200, account: {...}, profile: {...} }
@@ -289,7 +314,7 @@ export async function getLoginStatus(): Promise<{
 
   try {
     console.log('[API] getLoginStatus: 检查登录状态, cookie 长度:', cookieValue.length)
-    const response = await axios.get(`${IP}/login/status?cookie=${cookieValue}`)
+    const response = await axios.post(`${IP}/login/status`, buildCookieBody())
     console.log('[API] getLoginStatus: 完整响应:', response.data)
 
     // 网易云 API 返回格式：{ code: 200, data: { ... } } 或直接 { code: 200, account: {...}, profile: {...} }
@@ -321,6 +346,13 @@ export async function getLoginStatus(): Promise<{
   }
 }
 
+window.setMusicCookie = setCookie
+window.getMusicCookie = getCookie
+window.loginWithCookie = async (cookie: string) => {
+  setCookie(cookie)
+  return await getUserAccount()
+}
+
 export async function recommendResource(forceRefresh: boolean = false): Promise<any> {
   // 如果强制刷新或没有缓存，则从 API 获取
   if (!forceRefresh) {
@@ -334,8 +366,9 @@ export async function recommendResource(forceRefresh: boolean = false): Promise<
   console.log('[API] 从 API 获取推荐歌单, cookie:', cookieValue ? '已设置' : '未设置')
   const data = (
     await axios({
-      method: 'get',
-      url: IP + '/recommend/resource' + (cookieValue ? '?cookie=' + cookieValue : ''),
+      method: 'post',
+      url: IP + '/recommend/resource',
+      data: buildCookieBody(),
     })
   ).data
 
@@ -378,8 +411,14 @@ export async function getPlaylist(uid: string, offset: number = 0): Promise<any>
 
   let data = (
     await axios({
-      method: 'get',
-      url: `${IP}/playlist/track/all?id=${uid}&limit=${limit}&offset=${offset}${cookieValue ? '&cookie=' + cookieValue : ''}`,
+      method: 'post',
+      url: `${IP}/playlist/track/all`,
+      params: {
+        id: uid,
+        limit,
+        offset,
+      },
+      data: buildCookieBody(),
     })
   ).data
 
@@ -417,8 +456,12 @@ export async function getPlaylistAllTracks(id: string): Promise<any[]> {
 
     const data = (
       await axios({
-        method: 'get',
-        url: `${IP}/playlist/track/all?id=${id}${cookieValue ? '&cookie=' + cookieValue : ''}`,
+        method: 'post',
+        url: `${IP}/playlist/track/all`,
+        params: {
+          id,
+        },
+        data: buildCookieBody(),
       })
     ).data
 
@@ -459,8 +502,12 @@ export async function getPlaylistDetail(id: string): Promise<any> {
     }
 
     const response = await axios({
-      method: 'get',
-      url: `${IP}/playlist/detail?id=${id}${cookieValue ? '&cookie=' + cookieValue : ''}`,
+      method: 'post',
+      url: `${IP}/playlist/detail`,
+      params: {
+        id,
+      },
+      data: buildCookieBody(),
     })
 
     // 缓存数据
@@ -516,13 +563,19 @@ export async function likeMusic(id: string, like?: boolean): Promise<any> {
   const likeStatus = like === undefined ? true : like
 
   console.log(
-    `${IP}/song/like?id=${id}&uid=${uid}&like=${likeStatus}${cookieValue ? '&cookie=' + cookieValue : ''}`,
+    `${IP}/song/like?id=${id}&uid=${uid}&like=${likeStatus}${cookieValue ? ' (cookie body)' : ''}`,
   )
 
   let data = (
     await axios({
-      method: 'get',
-      url: `${IP}/song/like?id=${id}&uid=${uid}&like=${likeStatus}${cookieValue ? '&cookie=' + cookieValue : ''}`,
+      method: 'post',
+      url: `${IP}/song/like`,
+      params: {
+        id,
+        uid,
+        like: likeStatus,
+      },
+      data: buildCookieBody(),
     })
   ).data
   return Promise.resolve(data)
@@ -537,12 +590,9 @@ export async function getLikedSongs(): Promise<any> {
 
   try {
     const response = await axios({
-      method: 'get',
+      method: 'post',
       url: `${IP}/likelist`,
-      params: {
-        uid: 0, // uid=0 表示当前登录用户
-        cookie: cookieValue,
-      },
+      data: buildCookieBody({ uid: '0' }),
     })
     return response.data
   } catch (error) {
@@ -602,8 +652,9 @@ export async function getRecommendMusic(forceRefresh: boolean = false): Promise<
   console.log('[API] 从 API 获取推荐歌曲, cookie:', cookieValue ? '已设置' : '未设置')
   const newData = (
     await axios({
-      method: 'get',
-      url: IP + '/recommend/songs' + (cookieValue ? '?cookie=' + cookieValue : ''),
+      method: 'post',
+      url: IP + '/recommend/songs',
+      data: buildCookieBody(),
     })
   ).data
 
@@ -699,14 +750,9 @@ export async function getUserPlaylist(
     }
 
     const response = await axios({
-      method: 'get',
+      method: 'post',
       url: `${IP}/user/playlist`,
-      params: {
-        uid,
-        limit,
-        offset,
-        cookie: cookieValue,
-      },
+      data: buildCookieBody({ uid, limit, offset }),
     })
 
     // 缓存数据
@@ -749,14 +795,9 @@ export async function getUserPlaylistCollect(
     }
 
     const response = await axios({
-      method: 'get',
+      method: 'post',
       url: `${IP}/user/playlist/collect`,
-      params: {
-        uid,
-        limit,
-        offset,
-        cookie: cookieValue,
-      },
+      data: buildCookieBody({ uid, limit, offset }),
     })
 
     // 缓存数据
@@ -801,14 +842,9 @@ export async function getUserPlaylistCreate(
     }
 
     const response = await axios({
-      method: 'get',
+      method: 'post',
       url: `${IP}/user/playlist/create`,
-      params: {
-        uid,
-        limit,
-        offset,
-        cookie: cookieValue,
-      },
+      data: buildCookieBody({ uid, limit, offset }),
     })
 
     // 缓存数据
