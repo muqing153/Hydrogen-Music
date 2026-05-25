@@ -92,13 +92,11 @@
         <!-- 播放列表内容 -->
         <v-card v-if="songs.length > 0" class="playlist-content" elevation="1" flat>
             <v-virtual-scroll :items="songs" height="100%" item-height="72">
-                <template v-slot:default="{ item }: { item: any }">
-                    <v-list-item class="song-item" @click="async () => {
-                        await player.addTrack(String(item.id), true)
-                    }">
+                <template v-slot:default="slot">
+                    <v-list-item class="song-item" @click="playTrack(slot.item as any)">
                         <template v-slot:prepend>
                             <v-avatar size="56" rounded="lg">
-                                <v-img :src="`${item.al.picUrl}?param=56y56`" cover>
+                                <v-img :src="`${(slot.item as any).al.picUrl}?param=56y56`" cover>
                                     <template v-slot:placeholder>
                                         <div class="d-flex align-center justify-center fill-height">
                                             <v-progress-circular color="grey-lighten-4"
@@ -110,25 +108,24 @@
                         </template>
 
                         <v-list-item-title class="font-weight-medium text-body-1">
-                            {{ item.name }}
+                            {{ (slot.item as any).name }}
                         </v-list-item-title>
 
                         <v-list-item-subtitle class="mt-1">
                             <span class="text-truncate">
                                 <v-icon size="x-small" class="mr-1">mdi-account-music</v-icon>
-                                {{item.ar.map((a: any) => a.name).join(' / ')}}
+                                {{(slot.item as any).ar.map((a: any) => a.name).join(' / ')}}
                             </span>
-                            <br v-if="item.al.name" />
-                            <v-chip v-if="item.al.name" size="x-small" class="mt-1" variant="tonal">
+                            <br v-if="(slot.item as any).al.name" />
+                            <v-chip v-if="(slot.item as any).al.name" size="x-small" class="mt-1" variant="tonal">
                                 <v-icon start size="x-small">mdi-album</v-icon>
-                                {{ item.al.name }}
+                                {{ (slot.item as any).al.name }}
                             </v-chip>
                         </v-list-item-subtitle>
 
                         <template v-slot:append>
-                            <v-btn icon="mdi-play-circle" size="large" variant="text" @click.stop="async () => {
-                                await player.addTrack(String(item.id), true)
-                            }" />
+                            <v-btn icon="mdi-play-circle" size="large" variant="text"
+                                @click.stop="playTrack(slot.item as any)" />
                         </template>
                     </v-list-item>
                 </template>
@@ -281,6 +278,15 @@ async function addAllToPlaylist() {
         console.error('加入播放列表失败:', error);
     } finally {
         isAddingAll.value = false;
+    }
+}
+
+// 单曲播放
+async function playTrack(item: any) {
+    try {
+        await player.addTrack(String(item.id), true);
+    } catch (error) {
+        console.error('播放歌曲失败:', error);
     }
 }
 

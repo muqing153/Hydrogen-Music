@@ -106,7 +106,7 @@
                         @click="playTrack(item)">
                         <template v-slot:prepend>
                             <v-avatar size="56" rounded="lg">
-                                <v-img :src="item.al?.picUrl || item.album?.picUrl" cover>
+                                <v-img :src="withParam(item.al?.picUrl || item.album?.picUrl, '56y56')" cover>
                                     <template v-slot:placeholder>
                                         <div class="d-flex align-center justify-center fill-height">
                                             <v-icon color="grey-lighten-2" size="large">mdi-music-note</v-icon>
@@ -145,7 +145,7 @@
                         @click="openPlaylist(item.id)">
                         <template v-slot:prepend>
                             <v-avatar size="56" rounded="lg">
-                                <v-img :src="item.coverImgUrl" cover>
+                                <v-img :src="withParam(item.coverImgUrl, '200y200')" cover>
                                     <template v-slot:placeholder>
                                         <div class="d-flex align-center justify-center fill-height">
                                             <v-icon color="grey-lighten-2" size="large">mdi-playlist-music</v-icon>
@@ -186,7 +186,7 @@
                         @click="openAlbum(item.id)">
                         <template v-slot:prepend>
                             <v-avatar size="56" rounded="lg">
-                                <v-img :src="item.picUrl || item.blurPicUrl" cover>
+                                <v-img :src="withParam(item.picUrl || item.blurPicUrl)" cover>
                                     <template v-slot:placeholder>
                                         <div class="d-flex align-center justify-center fill-height">
                                             <v-icon color="grey-lighten-2" size="large">mdi-album</v-icon>
@@ -227,7 +227,7 @@
                         @click="openArtist(item.id)">
                         <template v-slot:prepend>
                             <v-avatar size="56" rounded="lg">
-                                <v-img :src="item.picUrl || item.img1v1Url" cover>
+                                <v-img :src="withParam(item.picUrl || item.img1v1Url)" cover>
                                     <template v-slot:placeholder>
                                         <div class="d-flex align-center justify-center fill-height">
                                             <v-icon color="grey-lighten-2" size="large">mdi-account-music</v-icon>
@@ -304,7 +304,7 @@
                         @click="openRadio(item.id)">
                         <template v-slot:prepend>
                             <v-avatar size="56" rounded="lg">
-                                <v-img :src="item.picUrl" cover>
+                                <v-img :src="withParam(item.picUrl)" cover>
                                     <template v-slot:placeholder>
                                         <div class="d-flex align-center justify-center fill-height">
                                             <v-icon color="grey-lighten-2" size="large">mdi-radio</v-icon>
@@ -426,7 +426,7 @@
                         @click="playTrack(item)">
                         <template v-slot:prepend>
                             <v-avatar size="56" rounded="lg">
-                                <v-img :src="item.al?.picUrl || item.album?.picUrl" cover>
+                                <v-img :src="withParam(item.al?.picUrl || item.album?.picUrl, '56y56')" cover>
                                     <template v-slot:placeholder>
                                         <div class="d-flex align-center justify-center fill-height">
                                             <v-icon color="grey-lighten-2" size="large">mdi-text</v-icon>
@@ -464,7 +464,8 @@
                     <v-list-item v-for="(item, index) in searchResults" :key="index" class="result-item">
                         <template v-slot:prepend>
                             <v-avatar size="56" rounded="lg">
-                                <v-img :src="item.picUrl || item.coverImgUrl || item.avatarUrl || item.cover" cover>
+                                <v-img :src="withParam(item.picUrl || item.coverImgUrl || item.avatarUrl || item.cover)"
+                                    cover>
                                     <template v-slot:placeholder>
                                         <div class="d-flex align-center justify-center fill-height">
                                             <v-icon color="grey-lighten-2" size="large">{{ currentSearchTypeIcon
@@ -599,6 +600,12 @@ let debounceTimer: any = null
 
 // 热门搜索列表
 const hotTagsList = ref<any[]>([])
+
+// 图片 URL 添加尺寸参数的辅助函数
+function withParam(url: string | undefined, param = '56y56') {
+    if (!url) return ''
+    return url.includes('?') ? `${url}&param=${param}` : `${url}?param=${param}`
+}
 
 // 搜索历史
 const searchHistory = ref<string[]>([])

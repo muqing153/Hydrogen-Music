@@ -59,6 +59,24 @@ function buildCookieBody(data: Record<string, string | number | undefined> = {})
   return body
 }
 
+function safeLocalStorageSet(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value)
+    return true
+  } catch (error: unknown) {
+    const isQuotaError = error instanceof DOMException && (
+      error.name === 'QuotaExceededError' ||
+      error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+    )
+    if (isQuotaError) {
+      console.warn(`[Storage] 写入 ${key} 时超过配额，已跳过缓存。`)
+      localStorage.removeItem(key)
+      return false
+    }
+    throw error
+  }
+}
+
 // 二维码登录接口类型定义
 interface QRCodeKeyResponse {
   code: number
@@ -512,9 +530,12 @@ export async function getPlaylistDetail(id: string): Promise<any> {
 
     // 缓存数据
     if (cookieValue) {
-      localStorage.setItem(cacheKey, JSON.stringify(response.data))
-      localStorage.setItem(cacheKey + '_time', Date.now().toString())
-      console.log(`[API] 歌单详情 ${id} 已缓存`)
+      const payload = JSON.stringify(response.data)
+      const cached = safeLocalStorageSet(cacheKey, payload)
+      if (cached) {
+        safeLocalStorageSet(cacheKey + '_time', Date.now().toString())
+        console.log(`[API] 歌单详情 ${id} 已缓存`)
+      }
     }
 
     return response.data
