@@ -1,6 +1,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useTheme } from 'vuetify'
 import { isLoggedIn, logout, getUserAccount, getLoginStatus, getCookie } from '../api'
+import { emitAuthChange } from './authEvents'
 
 /**
  * 主题管理组合式函数
@@ -84,19 +85,31 @@ export function useAuth(onLoginSuccess?: () => void) {
     showLoginDialog.value = true
   }
 
+  // 登录成功后：刷新用户信息，再广播登录态变化（触发页面数据/喜欢歌曲刷新）
+  async function handleLoginSuccess() {
+    try {
+      await fetchUserInfo()
+    } finally {
+      emitAuthChange('login')
+    }
+  }
+
   async function handleLogout() {
     const result = await logout()
     if (result.success) {
       userInfo.value = null
       console.log('[Auth] 退出登录成功')
+      emitAuthChange('logout')
     } else {
       console.warn('[Auth] 退出登录:', result.message)
+      emitAuthChange('logout')
     }
   }
 
   function handleLogoutSuccess() {
     userInfo.value = null
     console.log('[Auth] 退出登录成功（从 LoginView）')
+    emitAuthChange('logout')
   }
 
   // 获取 VIP 类型文本
@@ -124,6 +137,7 @@ export function useAuth(onLoginSuccess?: () => void) {
     userInfo,
     fetchUserInfo,
     handleLogin,
+    handleLoginSuccess,
     handleLogout,
     handleLogoutSuccess,
     getVipTypeText,

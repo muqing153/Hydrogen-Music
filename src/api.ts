@@ -1,16 +1,17 @@
 import axios from 'axios'
+import { ref } from 'vue'
 // 开发环境使用代理，生产环境使用完整 URL
 const isDev = import.meta.env.DEV
 export const IP = isDev ? ' http://localhost:3000' : 'https://api.muqingcandy.cn'
 
-// Cookie 管理
-let cookieValue = ''
+// Cookie 管理（使用 Vue ref 保持登录态响应式，供 loginStatus 等 computed 依赖）
+const cookieRef = ref<string>('')
 
 // 初始化时从 localStorage 恢复 cookie
 function initCookie() {
   const savedCookie = localStorage.getItem('music_cookie')
   if (savedCookie) {
-    cookieValue = savedCookie
+    cookieRef.value = savedCookie
     console.log('[Cookie] 已从 localStorage 恢复 cookie')
   }
 }
@@ -31,11 +32,11 @@ declare global {
 }
 
 export function getCookie(): string {
-  return cookieValue
+  return cookieRef.value
 }
 
 export function setCookie(cookie: string): void {
-  cookieValue = cookie
+  cookieRef.value = cookie
   // 持久化到 localStorage
   if (cookie) {
     localStorage.setItem('music_cookie', cookie)
@@ -48,8 +49,8 @@ export function setCookie(cookie: string): void {
 
 function buildCookieBody(data: Record<string, string | number | undefined> = {}) {
   const body = new URLSearchParams()
-  if (cookieValue) {
-    body.set('cookie', cookieValue)
+  if (cookieRef.value) {
+    body.set('cookie', cookieRef.value)
   }
   Object.entries(data).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
@@ -64,10 +65,9 @@ function safeLocalStorageSet(key: string, value: string): boolean {
     localStorage.setItem(key, value)
     return true
   } catch (error: unknown) {
-    const isQuotaError = error instanceof DOMException && (
-      error.name === 'QuotaExceededError' ||
-      error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
-    )
+    const isQuotaError =
+      error instanceof DOMException &&
+      (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')
     if (isQuotaError) {
       console.warn(`[Storage] 写入 ${key} 时超过配额，已跳过缓存。`)
       localStorage.removeItem(key)
@@ -259,7 +259,7 @@ export async function logout(): Promise<{ success: boolean; message?: string }> 
  * 检查是否已登录
  */
 export function isLoggedIn(): boolean {
-  return cookieValue !== '' && cookieValue.length > 0
+  return cookieRef.value !== '' && cookieRef.value.length > 0
 }
 
 /**
@@ -280,7 +280,7 @@ export async function getUserAccount(): Promise<{
   }
 
   try {
-    console.log('[API] getUserAccount: 获取用户信息, cookie 长度:', cookieValue.length)
+    console.log('[API] getUserAccount: 获取用户信息, cookie 长度:', cookieRef.value.length)
     const response = await axios.post(`${IP}/user/account`, buildCookieBody())
     console.log('[API] getUserAccount: 完整响应:', response.data)
 
@@ -331,7 +331,7 @@ export async function getLoginStatus(): Promise<{
   }
 
   try {
-    console.log('[API] getLoginStatus: 检查登录状态, cookie 长度:', cookieValue.length)
+    console.log('[API] getLoginStatus: 检查登录状态, cookie 长度:', cookieRef.value.length)
     const response = await axios.post(`${IP}/login/status`, buildCookieBody())
     console.log('[API] getLoginStatus: 完整响应:', response.data)
 
@@ -381,7 +381,7 @@ export async function recommendResource(forceRefresh: boolean = false): Promise<
     }
   }
 
-  console.log('[API] 从 API 获取推荐歌单, cookie:', cookieValue ? '已设置' : '未设置')
+  console.log('[API] 从 API 获取推荐歌单, cookie:', cookieRef.value ? '已设置' : '未设置')
   const data = (
     await axios({
       method: 'post',
@@ -391,7 +391,7 @@ export async function recommendResource(forceRefresh: boolean = false): Promise<
   ).data
 
   // 只有登录时才缓存，未登录时不缓存
-  if (cookieValue) {
+  if (cookieRef.value) {
     localStorage.setItem('recommendResource', JSON.stringify(data))
     console.log('[API] 推荐歌单已缓存（登录状态）')
   } else {
@@ -441,7 +441,7 @@ export async function getPlaylist(uid: string, offset: number = 0): Promise<any>
   ).data
 
   // 缓存数据
-  if (cookieValue) {
+  if (cookieRef.value) {
     localStorage.setItem(cacheKey, JSON.stringify(data))
     localStorage.setItem(cacheKey + '_time', Date.now().toString())
     console.log(`[API] 歌单 ${uid} 已缓存`)
@@ -484,7 +484,7 @@ export async function getPlaylistAllTracks(id: string): Promise<any[]> {
     ).data
 
     // 缓存数据
-    if (cookieValue) {
+    if (cookieRef.value) {
       localStorage.setItem(cacheKey, JSON.stringify(data))
       localStorage.setItem(cacheKey + '_time', Date.now().toString())
       console.log(`[API] 歌单 ${id} 全部歌曲已缓存`)
@@ -529,7 +529,7 @@ export async function getPlaylistDetail(id: string): Promise<any> {
     })
 
     // 缓存数据
-    if (cookieValue) {
+    if (cookieRef.value) {
       const payload = JSON.stringify(response.data)
       const cached = safeLocalStorageSet(cacheKey, payload)
       if (cached) {
@@ -584,7 +584,7 @@ export async function likeMusic(id: string, like?: boolean): Promise<any> {
   const likeStatus = like === undefined ? true : like
 
   console.log(
-    `${IP}/song/like?id=${id}&uid=${uid}&like=${likeStatus}${cookieValue ? ' (cookie body)' : ''}`,
+    `${IP}/song/like?id=${id}&uid=${uid}&like=${likeStatus}${cookieRef.value ? ' (cookie body)' : ''}`,
   )
 
   let data = (
@@ -670,7 +670,7 @@ export async function getRecommendMusic(forceRefresh: boolean = false): Promise<
     }
   }
 
-  console.log('[API] 从 API 获取推荐歌曲, cookie:', cookieValue ? '已设置' : '未设置')
+  console.log('[API] 从 API 获取推荐歌曲, cookie:', cookieRef.value ? '已设置' : '未设置')
   const newData = (
     await axios({
       method: 'post',
@@ -680,7 +680,7 @@ export async function getRecommendMusic(forceRefresh: boolean = false): Promise<
   ).data
 
   // 只有登录时才缓存
-  if (cookieValue) {
+  if (cookieRef.value) {
     localStorage.setItem(cacheKey, JSON.stringify(newData))
     localStorage.setItem(cacheKey + '_time', Date.now().toString())
     console.log('[API] 推荐歌曲已缓存（登录状态）')
@@ -822,7 +822,7 @@ export async function getUserPlaylistCollect(
     })
 
     // 缓存数据
-    if (cookieValue) {
+    if (cookieRef.value) {
       localStorage.setItem(cacheKey, JSON.stringify(response.data))
       localStorage.setItem(cacheKey + '_time', Date.now().toString())
       console.log(`[API] 用户 ${uid} 收藏歌单已缓存`)
@@ -869,7 +869,7 @@ export async function getUserPlaylistCreate(
     })
 
     // 缓存数据
-    if (cookieValue) {
+    if (cookieRef.value) {
       localStorage.setItem(cacheKey, JSON.stringify(response.data))
       localStorage.setItem(cacheKey + '_time', Date.now().toString())
       console.log(`[API] 用户 ${uid} 创建歌单已缓存`)

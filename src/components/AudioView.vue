@@ -1,447 +1,448 @@
 <template>
-    <!-- 🌫 背景 -->
-
-    <v-sheet class="fullscreen" :class="{ closing: isClosing }" :style="{ '--theme-color': themeColor }">
-        <div class="bg" :style="{
-            backgroundImage: `url(${imageSrc})`,
-            transform: `translate(-50%, -50%) scale(${scale}) rotate(${rotate}deg)`
-        }" />
-        <!-- 顶部按钮 -->
-        <div class="top-btn">
-            <v-btn icon="mdi-fullscreen-exit" variant="plain" @click="Close()" :style="{ color: themeColor }" />
+  <v-sheet class="fullscreen" :style="{ '--c-main': accentTriplet }">
+    <!-- 🌫 分层背景 -->
+    <div class="bg" aria-hidden="true">
+      <div class="bg__parallax" ref="parallaxEl">
+        <div
+          class="bg__breathe"
+          :style="{ animationPlayState: player.isPlaying.value ? 'running' : 'paused' }"
+        >
+          <div
+            class="bg__layer"
+            :class="{ 'is-active': activeLayer === 0 }"
+            :style="layerStyle(0)"
+          />
+          <div
+            class="bg__layer"
+            :class="{ 'is-active': activeLayer === 1 }"
+            :style="layerStyle(1)"
+          />
         </div>
-        <!-- 🎵 右上角播放列表按钮 -->
-        <div class="playlist-btn">
-            <v-btn icon @click='navigationrightShow = !navigationrightShow' variant="plain"
-                :style="{ color: themeColor }">
-                <v-icon>mdi-playlist-music</v-icon>
-            </v-btn>
+      </div>
+      <div class="bg__glow" />
+      <div class="bg__scrim" />
+      <div class="bg__noise" />
+    </div>
+
+    <!-- 顶部按钮 -->
+    <div class="top-btn">
+      <v-btn icon="mdi-fullscreen-exit" variant="plain" @click="Close()" />
+    </div>
+    <!-- 🎵 右上角播放列表按钮 -->
+    <div class="playlist-btn">
+      <v-btn icon variant="plain" @click="navigationrightShow = !navigationrightShow">
+        <v-icon>mdi-playlist-music</v-icon>
+      </v-btn>
+    </div>
+
+    <!-- 主体 - 桌面端布局 -->
+    <v-row no-gutters class="main-row desktop-layout">
+      <!-- 🍎 左侧播放器区域 -->
+      <v-col cols="12" sm="5" md="4" lg="3">
+        <div class="apple-player-container">
+          <!-- 封面（交叉淡入） -->
+          <div class="apple-cover">
+            <v-card class="cover-card" elevation="8">
+              <div
+                class="cover-layer"
+                :class="{ 'is-active': activeCover === 0 }"
+                :style="coverStyle(0)"
+              />
+              <div
+                class="cover-layer"
+                :class="{ 'is-active': activeCover === 1 }"
+                :style="coverStyle(1)"
+              />
+            </v-card>
+          </div>
+
+          <!-- 歌曲信息 -->
+          <div class="apple-info">
+            <h3 class="song-name">{{ player.currentTrack.value?.name ?? '暂无歌曲' }}</h3>
+            <p class="artist-name">{{ player.currentTrack.value?.artist ?? '暂无作者' }}</p>
+          </div>
+
+          <!-- 进度条 -->
+          <div class="apple-progress">
+            <SliderView :theme-color="accent" />
+          </div>
+
+          <!-- 控制按钮 -->
+          <div class="apple-controls">
+            <v-btn
+              :icon="
+                player.isSongLiked(player.currentTrack.value?.id || '')
+                  ? 'mdi-heart'
+                  : 'mdi-heart-outline'
+              "
+              :color="player.isSongLiked(player.currentTrack.value?.id || '') ? 'red' : 'white'"
+              variant="text"
+              density="comfortable"
+              @click="player.like(player.currentTrack.value?.id)"
+              aria-label="喜欢歌曲"
+            />
+            <v-btn
+              icon="mdi-skip-previous"
+              variant="text"
+              density="comfortable"
+              class="ctrl-btn"
+              @click="player.prev()"
+              aria-label="上一首"
+            />
+            <v-btn
+              class="play-btn"
+              :icon="player.isPlaying.value ? 'mdi-pause' : 'mdi-play'"
+              size="large"
+              variant="text"
+              density="comfortable"
+              @click="player.toggle()"
+              aria-label="播放/暂停"
+            />
+            <v-btn
+              icon="mdi-skip-next"
+              variant="text"
+              density="comfortable"
+              class="ctrl-btn"
+              @click="player.next()"
+              aria-label="下一首"
+            />
+            <v-btn
+              :icon="getPlayModeIcon()"
+              variant="text"
+              density="comfortable"
+              class="ctrl-btn"
+              @click="player.SetPlayMode()"
+              aria-label="切换播放模式"
+            />
+          </div>
+
+          <!-- 音量 -->
+          <div class="apple-volume">
+            <SliderSoundView :theme-color="accent" />
+          </div>
         </div>
-        <!-- 主体 - 桌面端布局 -->
-        <v-row no-gutters class="main-row desktop-layout">
+      </v-col>
 
-            <!-- 🍎 左侧播放器区域（自动） -->
-            <v-col cols="12" sm="5" md="4" lg="3">
-                <div class="apple-player-container">
-                    <!-- 封面 -->
-                    <div class="apple-cover">
-                        <v-card class="cover-card" elevation="8">
-                            <v-img :src="imageSrc" cover class="cover-img" aspect-ratio="1" />
-                        </v-card>
-                    </div>
+      <!-- 🎧 音频可视化分割线 -->
+      <div class="wave-divider">
+        <div v-for="i in WAVE_SIZE" :key="i" class="wave-dot" :ref="(el) => setDotRef(el, i - 1)" />
+      </div>
 
-                    <!-- 歌曲信息 -->
-                    <div class="apple-info">
-                        <h3 class="song-name" :style="{ color: themeColor }">
-                            {{ player.currentTrack.value?.name ?? '暂无歌曲' }}
-                        </h3>
-                        <p class="artist-name" :style="{ color: themeColor + '99' }">
-                            {{ player.currentTrack.value?.artist ?? '暂无作者' }}
-                        </p>
-                    </div>
-
-                    <!-- 进度条 -->
-                    <div class="apple-progress">
-                        <SliderView :theme-color="themeColor" />
-                    </div>
-
-                    <!-- 控制按钮 -->
-                    <div class="apple-controls">
-                        <!-- 喜欢按钮 -->
-                        <v-btn
-                            :icon="player.isSongLiked(player.currentTrack.value?.id || '') ? 'mdi-heart' : 'mdi-heart-outline'"
-                            :color="player.isSongLiked(player.currentTrack.value?.id || '') ? 'red' : themeColor"
-                            variant="text" density="comfortable" @click="player.like(player.currentTrack.value?.id)"
-                            aria-label="喜欢歌曲" />
-                        <v-btn icon="mdi-skip-previous" variant="text" density="comfortable"
-                            :style="{ color: themeColor }" @click="player.prev()" aria-label="上一首" />
-                        <v-btn :icon="player.isPlaying.value ? 'mdi-pause' : 'mdi-play'" variant="text" size="large"
-                            density="comfortable" :style="{ color: themeColor }" @click="player.toggle()"
-                            aria-label="播放/暂停" />
-                        <v-btn icon="mdi-skip-next" variant="text" density="comfortable" :style="{ color: themeColor }"
-                            @click="player.next()" aria-label="下一首" />
-                        <v-btn :icon="getPlayModeIcon()" variant="text" density="comfortable"
-                            :style="{ color: themeColor }" @click="player.SetPlayMode()" aria-label="切换播放模式" />
-                    </div>
-
-                    <!-- 音量 -->
-                    <div class="apple-volume">
-                        <SliderSoundView :theme-color="themeColor" />
-                    </div>
-                </div>
-            </v-col>
-
-            <!-- 🎧 音频可视化分割线 -->
-            <div class="wave-divider">
-                <div v-for="i in wave.length - 1" :key="i" class="wave-dot" :style="{
-                    width: 3 + wave[i]! * 28 + 'px',
-                    opacity: 0.2 + wave[i]! * 0.8,
-                    backgroundColor: themeColor,
-                    boxShadow: `0 0 ${6 + wave[i]! * 10}px ${themeColor}35`
-                }" />
-            </div>
-
-            <!-- 🎤 右侧歌词区域（70%） -->
-            <v-col class="right" cols="12" sm="7" md="8" lg="9">
-                <LrcView :theme-color="themeColor" />
-            </v-col>
-
-        </v-row>
-
-        <!-- 主体 - 移动端布局 -->
-        <div class="mobile-layout">
-            <!-- 页面指示器 -->
-            <div class="page-indicator">
-                <div class="indicator-dot" :class="{ active: currentSlide === 0 }"></div>
-                <div class="indicator-dot" :class="{ active: currentSlide === 1 }"></div>
-            </div>
-            <!-- 滑动容器 -->
-            <div class="mobile-swipe-container" @touchstart="handleTouchStart" @touchmove="handleTouchMove"
-                @touchend="handleTouchEnd">
-                <div class="mobile-slider" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
-                    <!-- 🍎 第一页：播放器封面 - 模仿桌面端布局 -->
-                    <div class="mobile-slide mobile-player-section">
-                        <!-- 封面区域 - 居中 -->
-                        <div class="mobile-cover-area">
-                            <div class="mobile-cover">
-                                <v-card class="mobile-cover-card" elevation="8">
-                                    <v-img :src="imageSrc" cover class="mobile-cover-img" aspect-ratio="1" />
-                                </v-card>
-                            </div>
-                        </div>
-
-                        <!-- 底部信息区域 -->
-                        <div class="mobile-bottom-section">
-                            <!-- 歌曲信息 -->
-                            <div class="mobile-info">
-                                <h3 class="song-name" :style="{ color: themeColor }">
-                                    {{ player.currentTrack.value?.name ?? '暂无歌曲' }}
-                                </h3>
-                                <p class="artist-name" :style="{ color: themeColor + '99' }">
-                                    {{ player.currentTrack.value?.artist ?? '暂无作者' }}
-                                </p>
-                            </div>
-
-                            <!-- 进度条 -->
-                            <div class="mobile-progress">
-                                <SliderView :theme-color="themeColor" />
-                            </div>
-
-                            <!-- 控制按钮 -->
-                            <div class="apple-controls">
-                                <!-- 喜欢按钮 -->
-                                <v-btn
-                                    :icon="player.isSongLiked(player.currentTrack.value?.id || '') ? 'mdi-heart' : 'mdi-heart-outline'"
-                                    :color="player.isSongLiked(player.currentTrack.value?.id || '') ? 'red' : themeColor"
-                                    variant="text" density="comfortable"
-                                    @click="player.like(player.currentTrack.value?.id)" aria-label="喜欢歌曲" />
-                                <v-btn icon="mdi-skip-previous" variant="text" density="comfortable"
-                                    :style="{ color: themeColor }" @click="player.prev()" aria-label="上一首" />
-                                <v-btn :icon="player.isPlaying.value ? 'mdi-pause' : 'mdi-play'" variant="text"
-                                    size="large" density="comfortable" :style="{ color: themeColor }"
-                                    @click="player.toggle()" aria-label="播放/暂停" />
-                                <v-btn icon="mdi-skip-next" variant="text" density="comfortable"
-                                    :style="{ color: themeColor }" @click="player.next()" aria-label="下一首" />
-                                <v-btn :icon="getPlayModeIcon()" variant="text" density="comfortable"
-                                    :style="{ color: themeColor }" @click="player.SetPlayMode()" aria-label="切换播放模式" />
-                            </div>
-
-                            <!-- 音量 -->
-                            <div class="mobile-volume">
-                                <SliderSoundView :theme-color="themeColor" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <!--  第二页：歌词 -->
-                    <div class="mobile-slide mobile-lyrics-section">
-                        <div class="mobile-content-sheet">
-                            <LrcView :theme-color="themeColor" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-    </v-sheet>
+      <!-- 🎤 右侧歌词区域 -->
+      <v-col class="right" cols="12" sm="7" md="8" lg="9">
+        <LrcView :theme-color="accent" />
+      </v-col>
+    </v-row>
+  </v-sheet>
 </template>
 <script setup lang="ts">
 import { AudioViewShow, player } from '@/staic'
 import { navigationrightShow } from '@/state'
-import { ref, onMounted, watch, nextTick, computed } from 'vue'
-import { useTheme } from 'vuetify'
+import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
 import LrcView from '@/View/LrcView.vue'
 import SliderView from '@/View/SliderView.vue'
 import SliderSoundView from '@/View/SliderSoundView.vue'
 import axios from 'axios'
 import { PlayMode } from '@/player'
 import { getLyric } from '@/api'
-import { tr } from 'vuetify/locale'
-// 🎨 获取 Vuetify 主题
-const vuetifyTheme = useTheme()
-const imageSrc = ref<string>('')
-// 🎨 计算当前主题的反差色（深色主题用白色，浅色主题用深色）
-const themeColor = ref<string>(vuetifyTheme.global.current.value.dark ? '#ffffff' : '#1a1a1a')
-// 移动端滑动相关
-const currentSlide = ref(0) // 0: 封面页, 1: 歌词页
-const touchStartX = ref(0)
-const touchStartY = ref(0)
-const touchStartSlide = ref(0)
 
-function handleTouchStart(event: TouchEvent) {
-    touchStartX.value = event.touches[0]?.clientX || 0
-    touchStartY.value = event.touches[0]?.clientY || 0
-    touchStartSlide.value = currentSlide.value
+/* =========================
+   🎨 主色（--c-main 空格三元组）
+========================= */
+const fallbackPalette = [
+  '126 168 214',
+  '196 138 122',
+  '148 176 130',
+  '186 148 200',
+  '214 176 116',
+  '130 186 182',
+]
+const accentTriplet = ref(fallbackPalette[0]!)
+const accent = computed(() => `rgb(${accentTriplet.value})`)
+
+function fallbackAccent() {
+  const id = String(player.currentTrack.value?.id ?? '')
+  let hash = 0
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0
+  accentTriplet.value = fallbackPalette[hash % fallbackPalette.length]!
 }
 
-function handleTouchMove(event: TouchEvent) {
-    // 可以在这里添加滑动过程中的视觉反馈
+function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  const rf = r / 255
+  const gf = g / 255
+  const bf = b / 255
+  const max = Math.max(rf, gf, bf)
+  const min = Math.min(rf, gf, bf)
+  const l = (max + min) / 2
+  let h = 0
+  let s = 0
+  if (max !== min) {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    if (max === rf) h = (gf - bf) / d + (gf < bf ? 6 : 0)
+    else if (max === gf) h = (bf - rf) / d + 2
+    else h = (rf - gf) / d + 4
+    h *= 60
+  }
+  return [h, s, l]
 }
 
-function handleTouchEnd(event: TouchEvent) {
-    const touchEndX = event.changedTouches[0]?.clientX || 0
-    const touchEndY = event.changedTouches[0]?.clientY || 0
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  const c = (1 - Math.abs(2 * l - 1)) * s
+  const hp = h / 60
+  const x = c * (1 - Math.abs((hp % 2) - 1))
+  let r = 0
+  let g = 0
+  let b = 0
+  if (hp < 1) {
+    r = c
+    g = x
+  } else if (hp < 2) {
+    r = x
+    g = c
+  } else if (hp < 3) {
+    g = c
+    b = x
+  } else if (hp < 4) {
+    g = x
+    b = c
+  } else if (hp < 5) {
+    r = x
+    b = c
+  } else {
+    r = c
+    b = x
+  }
+  const m = l - c / 2
+  return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)]
+}
 
-    const deltaX = touchEndX - touchStartX.value
-    const deltaY = touchEndY - touchStartY.value
+const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v))
 
-    // 判断是否为水平滑动（水平距离大于垂直距离）
-    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
-        if (deltaX > 0 && currentSlide.value > 0) {
-            // 向右滑动，切换到上一页
-            currentSlide.value = currentSlide.value - 1
-        } else if (deltaX < 0 && currentSlide.value < 1) {
-            // 向左滑动，切换到下一页
-            currentSlide.value = currentSlide.value + 1
+function extractAccent(imageUrl: string) {
+  const img = new Image()
+  img.crossOrigin = 'Anonymous'
+  img.onload = () => {
+    try {
+      const size = 24
+      const canvas = document.createElement('canvas')
+      canvas.width = size
+      canvas.height = size
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      if (!ctx) return fallbackAccent()
+      ctx.drawImage(img, 0, 0, size, size)
+      const data = ctx.getImageData(0, 0, size, size).data
+
+      let bestScore = -1
+      let bh = 0
+      let bs = 0
+      let bl = 0
+      for (let i = 0; i < data.length; i += 4) {
+        if ((data[i + 3] ?? 0) < 125) continue
+        const [h, s, l] = rgbToHsl(data[i] ?? 0, data[i + 1] ?? 0, data[i + 2] ?? 0)
+        if (l < 0.1 || l > 0.94 || s < 0.12) continue
+        const score = s * 1.25 + (1 - Math.abs(l - 0.55) * 2.2) * 0.85
+        if (score > bestScore) {
+          bestScore = score
+          bh = h
+          bs = s
+          bl = l
         }
+      }
+      if (bestScore < 0) return fallbackAccent()
+
+      const s = clamp(bs, 0.42, 0.88)
+      const l = clamp(bl, 0.34, 0.58)
+      const [r, g, b] = hslToRgb(bh, s, l)
+      accentTriplet.value = `${r} ${g} ${b}`
+    } catch {
+      fallbackAccent()
     }
+  }
+  img.onerror = fallbackAccent
+  img.src = imageUrl
 }
 
 /* =========================
-   图片加载（修复版）
+   🖼 图片双层交叉淡入
 ========================= */
-const loadImage = async (url?: string) => {
-    if (!url) return
+const bgLayers = ref<[string, string]>(['', ''])
+const activeLayer = ref<0 | 1>(0)
+const coverLayers = ref<[string, string]>(['', ''])
+const activeCover = ref<0 | 1>(0)
+let loadToken = 0
 
-    if (!url.startsWith('http')) {
-        imageSrc.value = url
-        extractDominantColor(url)
-        return
-    }
+function layerStyle(i: 0 | 1) {
+  const src = bgLayers.value[i]
+  return src ? { backgroundImage: `url(${src})` } : undefined
+}
+function coverStyle(i: 0 | 1) {
+  const src = coverLayers.value[i]
+  return src ? { backgroundImage: `url(${src})` } : undefined
+}
 
-    const res = await axios.get(url, { responseType: 'blob' })
+async function loadImage(url?: string) {
+  if (!url) return
+  const token = ++loadToken
 
-    const reader = new FileReader()
-
-    return new Promise<string>((resolve, reject) => {
-        reader.onloadend = () => {
-            const base64 = reader.result as string
-            imageSrc.value = base64
-            // 🎨 提取主题颜色
-            extractDominantColor(base64)
-            resolve(base64)
-        }
+  let src = url
+  if (url.startsWith('http')) {
+    try {
+      const res = await axios.get(url, { responseType: 'blob' })
+      src = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
         reader.onerror = reject
         reader.readAsDataURL(res.data)
-    })
-}
-
-/* =========================
-   🎨 提取图片主色调并计算反差色
-========================= */
-function extractDominantColor(imageUrl: string) {
-    const img = new Image()
-    img.crossOrigin = 'Anonymous'
-
-    img.onload = () => {
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return
-
-        // 缩小图片以提高性能
-        const size = 50
-        canvas.width = size
-        canvas.height = size
-        ctx.drawImage(img, 0, 0, size, size)
-
-        // 获取像素数据
-        const imageData = ctx.getImageData(0, 0, size, size).data
-        let r = 0, g = 0, b = 0
-        let count = 0
-
-        // 采样像素（跳过透明像素）
-        for (let i = 0; i < imageData.length; i += 16) { // 每4个像素采样一次
-            const alpha = imageData[i + 3]
-            if (alpha !== undefined && alpha > 128) { // 忽略半透明像素
-                const red = imageData[i]
-                const green = imageData[i + 1]
-                const blue = imageData[i + 2]
-                if (red !== undefined && green !== undefined && blue !== undefined) {
-                    r += red
-                    g += green
-                    b += blue
-                    count++
-                }
-            }
-        }
-
-        if (count === 0) {
-            console.log('🎨 未找到有效像素，使用默认主题色')
-            return
-        }
-
-        // 计算平均颜色
-        r = Math.round(r / count)
-        g = Math.round(g / count)
-        b = Math.round(b / count)
-
-        // 🎯 计算互补色（色差最大的颜色）
-        const complementaryColor = getContrastingColor(r, g, b)
-        themeColor.value = complementaryColor
-        console.log(`🎨 提取颜色 - 原色: rgb(${r}, ${g}, ${b}), 反差色: ${complementaryColor}`)
+      })
+    } catch {
+      src = url
     }
+  }
+  if (token !== loadToken) return
 
-    img.src = imageUrl
+  const nextBg: 0 | 1 = activeLayer.value === 0 ? 1 : 0
+  const nextCover: 0 | 1 = activeCover.value === 0 ? 1 : 0
+  bgLayers.value = { ...bgLayers.value, [nextBg]: src } as [string, string]
+  coverLayers.value = { ...coverLayers.value, [nextCover]: src } as [string, string]
+
+  const probe = new Image()
+  probe.src = src
+  try {
+    await probe.decode()
+  } catch {
+    /* decode 失败仍尝试展示 */
+  }
+  if (token !== loadToken) return
+  await nextTick()
+  activeLayer.value = nextBg
+  activeCover.value = nextCover
+
+  extractAccent(src)
 }
 
 /* =========================
-   🎯 计算与给定颜色反差最大的颜色
+   🎵 歌词动态加载
 ========================= */
-function getContrastingColor(r: number, g: number, b: number): string {
-    // 方法1: 计算亮度，返回黑白中对比度更高的
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000
+async function loadLyricForCurrentTrack() {
+  const track = player.currentTrack.value
+  if (!track || !track.id || track.lyric) return
+  try {
+    const lyricData = await getLyric(track.id)
+    const idx = player.playlist.value.findIndex((t) => t.id === track.id)
+    if (idx !== -1 && lyricData) player.playlist.value[idx]!.lyric = lyricData
+  } catch (error) {
+    console.warn(`获取歌曲 ${track.id} 歌词失败:`, error)
+  }
+}
 
-    if (brightness > 128) {
-        // 亮色背景，返回深色文字
-        return '#1a1a1a'
-    } else {
-        // 暗色背景，返回浅色文字
-        return '#ffffff'
-    }
+watch(
+  () => player.currentTrack.value?.id,
+  () => {
+    loadImage(player.currentTrack.value?.picUrl)
+    loadLyricForCurrentTrack()
+  },
+)
+
+/* =========================
+   🎧 rAF：视差 + 波形
+========================= */
+const WAVE_SIZE = 30
+const parallaxEl = ref<HTMLElement | null>(null)
+const dotEls: (HTMLElement | null)[] = Array(WAVE_SIZE).fill(null)
+const lastDotStyle: string[] = Array(WAVE_SIZE).fill('')
+let rafId = 0
+const pointer = { x: 0, y: 0 }
+const drift = { x: 0, y: 0 }
+
+function setDotRef(el: unknown, i: number) {
+  dotEls[i] = (el as HTMLElement | null) ?? null
+}
+
+function onPointerMove(e: PointerEvent) {
+  const r = (e.currentTarget as HTMLElement | null)?.getBoundingClientRect()
+  if (!r) return
+  pointer.x = ((e.clientX - r.left) / r.width - 0.5) * 2
+  pointer.y = ((e.clientY - r.top) / r.height - 0.5) * 2
+}
+function onPointerLeave() {
+  pointer.x = 0
+  pointer.y = 0
+}
+
+function getMirrorWave(data: Uint8Array, size: number): number[] {
+  const result = new Array(size).fill(0)
+  const step = data.length / size
+  const center = (size - 1) / 2
+  for (let i = 0; i < size; i++) {
+    const mirrorIndex = i < center ? i : size - 1 - i
+    const v = data[Math.floor(mirrorIndex * step)] ?? 0
+    const value = v / 255
+    const dist = Math.abs(i - center) / center
+    const weight = Math.exp(-dist * dist * 1.5)
+    result[i] = Math.pow(value, 1.5) * 0.35 + value * weight * 0.65
+  }
+  return result
+}
+
+function tick() {
+  rafId = requestAnimationFrame(tick)
+
+  drift.x += (pointer.x - drift.x) * 0.06
+  drift.y += (pointer.y - drift.y) * 0.06
+  if (parallaxEl.value) {
+    parallaxEl.value.style.transform = `translate3d(${(drift.x * -18).toFixed(2)}px, ${(drift.y * -12).toFixed(2)}px, 0)`
+  }
+
+  const vals = getMirrorWave(player.getFrequencyData(), WAVE_SIZE)
+  for (let i = 0; i < WAVE_SIZE; i++) {
+    const v = vals[i] ?? 0
+    const style = `${Math.round((3 + v * 28) * 10) / 10}|${Math.round((0.2 + v * 0.8) * 100) / 100}`
+    if (style === lastDotStyle[i]) continue
+    lastDotStyle[i] = style
+    const el = dotEls[i]
+    if (!el) continue
+    el.style.width = `${3 + v * 28}px`
+    el.style.opacity = String(0.2 + v * 0.8)
+  }
 }
 
 /* =========================
-   初始化播放器
+   生命周期
 ========================= */
 onMounted(() => {
-    animate()
-    loadImage(player.currentTrack.value?.picUrl)
-    // 动态获取当前歌曲的歌词
-    loadLyricForCurrentTrack()
+  loadImage(player.currentTrack.value?.picUrl)
+  loadLyricForCurrentTrack()
+  rafId = requestAnimationFrame(tick)
+})
 
-    watch(
-        () => player.currentTrack.value?.id,
-        () => {
-            loadImage(player.currentTrack.value?.picUrl)
-            // 歌曲切换时，动态获取新歌曲的歌词
-            loadLyricForCurrentTrack()
-        }
-    )
+onUnmounted(() => {
+  cancelAnimationFrame(rafId)
 })
 
 /* =========================
-   动态加载歌词
+   关闭（动画由 App.vue 的 <Transition name="slide-up"> 统一处理）
 ========================= */
-async function loadLyricForCurrentTrack() {
-    const track = player.currentTrack.value
-    if (!track || !track.id) {
-        return
-    }
-
-    // 如果已经有歌词数据，不需要重新获取
-    if (track.lyric) {
-        console.log(`歌曲 ${track.id} 已有歌词数据，跳过获取`)
-        return
-    }
-
-    try {
-        console.log(`正在获取歌曲 ${track.id} 的歌词...`)
-        const lyricData = await getLyric(track.id)
-
-        // 更新播放列表中对应歌曲的歌词
-        const idx = player.playlist.value.findIndex(t => t.id === track!.id)
-        if (idx !== -1 && lyricData) {
-            player.playlist.value[idx]!.lyric = lyricData
-            console.log(`歌曲 ${track.id} 歌词获取成功`)
-        }
-    } catch (error) {
-        console.warn(`获取歌曲 ${track.id} 歌词失败:`, error)
-    }
-}
-const scale = ref(1)
-const rotate = ref(0)
-const wave = ref<number[]>(Array(30).fill(0))
-function animate() {
-    requestAnimationFrame(animate)
-
-    const volume = player.getVolume()
-
-    scale.value += (1.15 + volume / 800 - scale.value) * 0.08
-
-    const t = Date.now() * 0.00005
-
-    rotate.value = Math.sin(t) * 5 + t * 10
-
-
-    // 🎧 真正 FFT 数据
-
-    const data = player.getFrequencyData()
-    const WAVE_SIZE = 30
-
-    wave.value = getMirrorWave(data, WAVE_SIZE)
-}
-function getMirrorWave(data: Uint8Array, size: number) {
-    const result = new Array(size).fill(0)
-    const step = data.length / size
-    const center = (size - 1) / 2
-
-    for (let i = 0; i < size; i++) {
-        const mirrorIndex = i < center ? i : size - 1 - i
-        const v = data[Math.floor(mirrorIndex * step)] || 0
-
-        const value = v / 255
-
-        const dist = Math.abs(i - center) / center
-        const weight = Math.exp(-dist * dist * 1.5)
-
-        // 🔥 关键：双重压缩
-        result[i] =
-            Math.pow(value, 1.5) * 0.35 +
-            value * weight * 0.65
-    }
-
-    return result
-}
-/* =========================
-   关闭
-========================= */
-const isClosing = ref(false)
-
 function Close() {
-    isClosing.value = true
-    setTimeout(() => {
-        AudioViewShow.value = false
-        isClosing.value = false
-    }, 150) // 与 CSS transition 时长一致
+  AudioViewShow.value = false
 }
 
 /* =========================
    获取播放模式图标
 ========================= */
 function getPlayModeIcon(): string {
-    switch (player.playMode.value) {
-        case PlayMode.Sequential:
-            return 'mdi-repeat-off' // 顺序播放（不循环）
-        case PlayMode.Loop:
-            return 'mdi-repeat-once' // 单曲循环
-        case PlayMode.Shuffle:
-            return 'mdi-shuffle' // 随机播放
-        case PlayMode.ListLoop:
-            return 'mdi-repeat' // 列表循环
-        default:
-            return 'mdi-repeat-off'
-    }
+  switch (player.playMode.value) {
+    case PlayMode.Sequential:
+      return 'mdi-repeat-off'
+    case PlayMode.Loop:
+      return 'mdi-repeat-once'
+    case PlayMode.Shuffle:
+      return 'mdi-shuffle'
+    case PlayMode.ListLoop:
+      return 'mdi-repeat'
+    default:
+      return 'mdi-repeat-off'
+  }
 }
 </script>
 
@@ -450,534 +451,333 @@ function getPlayModeIcon(): string {
    全屏容器
 ======================= */
 .fullscreen {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    position: relative;
-    transition: transform 0.15s cubic-bezier(0.4, 0, 1, 1);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  background: #000;
 }
 
-.fullscreen.closing {
-    transform: translateY(100%);
+/* =======================
+   🌫 分层背景（ambient demo 结构）
+======================= */
+.bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bg__parallax {
+  position: absolute;
+  inset: -6%;
+  will-change: transform;
+}
+
+.bg__breathe {
+  position: absolute;
+  inset: 0;
+  animation: breathe 26s ease-in-out infinite alternate;
+}
+
+@keyframes breathe {
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(1.08);
+  }
+}
+
+.bg__layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(72px) saturate(1.75) brightness(0.55);
+  transform: scale(1.1);
+  opacity: 0;
+  transition:
+    opacity 0.9s ease,
+    transform 0.9s ease;
+  will-change: opacity, transform;
+}
+
+.bg__layer.is-active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.bg__glow {
+  position: absolute;
+  inset: -10%;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  background:
+    radial-gradient(45% 45% at 28% 30%, rgb(var(--c-main) / 0.6), transparent 70%),
+    radial-gradient(50% 50% at 75% 68%, rgb(var(--c-main) / 0.42), transparent 70%);
+  transition: background 1.2s linear;
+}
+
+.bg__scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.25) 35%,
+    rgba(0, 0, 0, 0.3) 65%,
+    rgba(0, 0, 0, 0.65) 100%
+  );
+}
+
+.bg__noise {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.055;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* 顶部按钮 */
 .top-btn {
-    position: absolute;
-    top: 16px;
-    left: 16px;
-    z-index: 20;
-    backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 50%;
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 20;
+  backdrop-filter: blur(14px);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
 }
 
 .top-btn .v-btn {
-    transition: all 0.2s ease;
+  color: rgba(255, 255, 255, 0.85);
+  transition: all 0.2s ease;
 }
 
 .top-btn .v-btn:hover {
-    transform: scale(1.1);
-    background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* 🎵 右上角播放列表按钮 */
 .playlist-btn {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    z-index: 20;
-    backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 50%;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+  backdrop-filter: blur(14px);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
 }
 
 .playlist-btn .v-btn {
-    transition: all 0.2s ease;
+  color: rgba(255, 255, 255, 0.85);
+  transition: all 0.2s ease;
 }
 
 .playlist-btn .v-btn:hover {
-    transform: scale(1.1);
-    background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* 主体 */
 .main-row {
-    height: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 /* =======================
    🍎 Apple Music 左侧
 ======================= */
-
-
 .apple-player-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 13px;
-    height: 100%;
-    width: 100%;
-    padding: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  height: 100%;
+  width: 100%;
+  padding: 36px;
 }
 
-/* 大屏幕优化 */
-@media (min-width: 1400px) {
-
-    .apple-cover {
-        width: 280px !important;
-        height: 280px !important;
-    }
-}
-
-@media (min-width: 1600px) {
-    .apple-cover {
-        width: 260px !important;
-        height: 260px !important;
-    }
-}
-
-@media (min-width: 1920px) {
-
-    .apple-cover {
-        width: 240px !important;
-        height: 240px !important;
-    }
-}
-
-@media (min-width: 2560px) {
-
-    .apple-cover {
-        width: 260px !important;
-        height: 260px !important;
-    }
-}
-
-/* 封面 */
+/* 封面：用 clamp 统一替代互相矛盾的媒体查询 */
 .apple-cover {
-    width: 300px;
-    height: 300px;
-    max-width: 100%;
-    transition: transform 0.3s ease;
+  width: clamp(200px, 26vh, 300px);
+  height: clamp(200px, 26vh, 300px);
+  max-width: 100%;
+  transition: transform 0.3s ease;
 }
 
 .apple-cover:hover {
-    transform: scale(1.02);
+  transform: scale(1.02);
 }
 
 .cover-card {
-    width: 100%;
-    height: 100%;
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.45),
-        0 10px 30px rgba(0, 0, 0, 0.3);
-    transition: box-shadow 0.3s ease;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 25px 80px rgba(0, 0, 0, 0.45),
+    0 10px 30px rgba(0, 0, 0, 0.3);
+  transition: box-shadow 0.3s ease;
 }
 
 .apple-cover:hover .cover-card {
-    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55),
-        0 15px 40px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.55),
+    0 15px 40px rgba(0, 0, 0, 0.4);
 }
 
-.cover-img {
-    width: 100%;
-    height: 100%;
+.cover-layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transform: scale(1.06);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s ease;
 }
 
-/* 信息 */
+.cover-layer.is-active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* 信息：文字统一白色系 */
 .apple-info {
-    text-align: center;
-    width: 100%;
-    max-width: 400px;
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
 }
 
 .song-name {
-    font-size: 24px;
-    font-weight: 700;
-    margin: 0;
-    letter-spacing: 0.5px;
-    color: var(--theme-color, #ffffff);
-    transition: color 0.3s ease;
-    line-height: 1.3;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
 }
 
 .artist-name {
-    font-size: 16px;
-    margin-top: 10px;
-    opacity: 0.65;
-    font-weight: 500;
-    letter-spacing: 0.3px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  font-size: 16px;
+  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 进度条 */
 .apple-progress {
-    width: 100%;
+  width: 100%;
 }
 
 /* 控制按钮 */
 .apple-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    opacity: 0.85;
-    width: 100%;
-    transition: opacity 0.3s ease;
-    flex-wrap: wrap;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
-.apple-controls:hover {
-    opacity: 1;
+.apple-controls .ctrl-btn {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* 播放键：accent 高亮 + 微光 */
+.apple-controls .play-btn {
+  color: rgb(var(--c-main));
+  filter: drop-shadow(0 0 10px rgb(var(--c-main) / 0.55));
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .apple-controls .v-btn {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .apple-controls .v-btn:hover {
-    transform: scale(1.1);
+  transform: scale(1.1);
 }
 
 .apple-controls .v-btn:active {
-    transform: scale(0.95);
+  transform: scale(0.95);
 }
 
 /* 音量 */
 .apple-volume {
-    width: 100%;
-    opacity: 0.75;
-    transition: opacity 0.3s ease;
+  width: 100%;
+  opacity: 0.85;
+  transition: opacity 0.3s ease;
 }
 
 .apple-volume:hover {
-    opacity: 0.95;
+  opacity: 1;
 }
 
 /* =======================
    🎤 右侧歌词
 ======================= */
 .right {
-    height: 100%;
-    overflow: hidden;
-    display: flex;
-    flex: 1;
-    margin-left: 0;
-    padding: 0 32px;
-    mask-image: linear-gradient(to bottom,
-            transparent 0%,
-            black 12%,
-            black 88%,
-            transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom,
-            transparent 0%,
-            black 12%,
-            black 88%,
-            transparent 100%);
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex: 1;
+  margin-left: 0;
+  padding: 0 32px;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 12%,
+    black 88%,
+    transparent 100%
+  );
 }
 
 /* =======================
-   📱 移动端布局
+   🎧 波形分割线（accent）
 ======================= */
-.mobile-layout {
-    display: none;
-    height: 100%;
-    flex-direction: column;
-    position: relative;
-    background: transparent;
-}
-
-/* 滑动容器 */
-.mobile-swipe-container {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-    touch-action: pan-y;
-    /* 允许垂直滚动，拦截水平滑动 */
-}
-
-.mobile-slider {
-    display: flex;
-    height: 100%;
-    transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.mobile-slide {
-    flex: 0 0 100%;
-    width: 100%;
-    height: 100%;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.mobile-player-section {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-
-/* 封面区域 - 居中 */
-.mobile-cover-area {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 30px 20px;
-}
-
-.mobile-cover {
-    width: 300px;
-    height: 300px;
-    max-width: 75vw;
-    transition: transform 0.3s ease;
-}
-
-.mobile-cover:active {
-    transform: scale(0.98);
-}
-
-.mobile-cover-card {
-    width: 100%;
-    height: 100%;
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.45),
-        0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.mobile-cover-img {
-    width: 100%;
-    height: 100%;
-}
-
-/* 底部信息区域 */
-.mobile-bottom-section {
-    padding: 0 28px 35px;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-}
-
-.mobile-info {
-    width: 100%;
-    max-width: 400px;
-}
-
-.mobile-info .song-name {
-    font-size: 21px;
-    font-weight: 700;
-    margin: 0;
-    letter-spacing: 0.5px;
-    line-height: 1.3;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.mobile-info .artist-name {
-    font-size: 15px;
-    opacity: 0.65;
-    margin-top: 8px;
-    font-weight: 500;
-    letter-spacing: 0.3px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.mobile-progress {
-    width: 100%;
-}
-
-.mobile-controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
-    opacity: 0.85;
-    flex-wrap: wrap;
-}
-
-.mobile-controls .v-btn {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.mobile-controls .v-btn:active {
-    transform: scale(0.9);
-}
-
-.mobile-volume {
-    width: 100%;
-    opacity: 0.75;
-}
-
-.mobile-lyrics-section {
-    display: flex;
-    flex-direction: column;
-}
-
-.mobile-content-sheet {
-    width: 100%;
-    height: 100%;
-    overflow-y: auto;
-    padding: 0px 20px 40px;
-    /* 添加上下沉浸式效果 - 优化渐变范围 */
-    mask-image: linear-gradient(to bottom,
-            transparent 0%,
-            black 8%,
-            black 92%,
-            transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom,
-            transparent 0%,
-            black 8%,
-            black 92%,
-            transparent 100%);
-    -webkit-overflow-scrolling: touch;
-}
-
-/* 页面指示器 */
-.page-indicator {
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 10px;
-    z-index: 10;
-    backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.08);
-    padding: 8px 16px;
-    border-radius: 20px;
-}
-
-.indicator-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.indicator-dot.active {
-    background: rgba(255, 255, 255, 0.95);
-    width: 28px;
-    border-radius: 4px;
-}
-
-/* =======================
-   🌫 背景
-======================= */
-.bg {
-    position: absolute;
-
-    width: 120vmax;
-    height: 120vmax;
-
-    left: 50%;
-    top: 50%;
-
-    background-size: cover;
-    background-position: center;
-
-    filter: blur(80px) brightness(0.5) saturate(1.3);
-
-    transition: filter 0.3s ease;
-    will-change: transform, filter;
-    z-index: -999;
-}
-
-
 .wave-divider {
-    width: 36px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 3px;
+  width: 36px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
 }
 
-/* ⭐关键：竖点 - 优化视觉效果 */
 .wave-dot {
-    height: 4px;
-    width: 3px;
-    border-radius: 999px;
-    transition: all 0.06s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: width, opacity, box-shadow;
-}
-
-/* =======================
-   📱 响应式设计
-======================= */
-@media (max-width: 768px) {
-
-    /* 隐藏桌面端布局 */
-    .desktop-layout {
-        display: none !important;
-    }
-
-    /* 显示移动端布局 */
-    .mobile-layout {
-        display: flex;
-    }
-
-    /* 调整顶部按钮位置 */
-    .top-btn {
-        top: 12px;
-        left: 12px;
-    }
-
-    .playlist-btn {
-        top: 12px;
-        right: 12px;
-    }
-
-    /* 优化移动端触摸体验 */
-    .mobile-controls .v-btn {
-        min-width: 48px;
-        min-height: 48px;
-    }
-}
-
-@media (max-width: 480px) {
-    .mobile-cover {
-        width: 260px;
-        height: 260px;
-    }
-
-    .mobile-player-section {
-        padding: 0 15px 15px;
-    }
-
-    .mobile-bottom-section {
-        padding: 0 20px 25px;
-        gap: 15px;
-    }
-
-    .mobile-controls {
-        gap: 15px;
-    }
-
-    .mobile-info .song-name {
-        font-size: 19px;
-    }
-
-    .mobile-info .artist-name {
-        font-size: 14px;
-    }
-
-    /* 优化小屏幕上的按钮大小 */
-    .apple-controls .v-btn,
-    .mobile-controls .v-btn {
-        min-width: 40px;
-        min-height: 40px;
-    }
+  height: 4px;
+  width: 3px;
+  border-radius: 999px;
+  background-color: rgb(var(--c-main));
+  box-shadow: 0 0 8px rgb(var(--c-main) / 0.35);
+  transition:
+    width 0.08s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.08s linear;
+  will-change: width, opacity;
 }
 </style>
